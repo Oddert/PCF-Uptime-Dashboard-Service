@@ -1,3 +1,5 @@
+"""Entry point for the application."""
+
 from fastapi import FastAPI
 from loguru import logger
 from uvicorn import run
