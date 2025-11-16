@@ -1,0 +1,6 @@
+fastapi
+loguru
+pre-commit
+ruff
+sqlalchemy
+uvicorn
