@@ -8,9 +8,9 @@ app = FastAPI()
 
 routes = [(root_resources.router, 'Root')]
 
-for route in routes:
-    logger.log(f'Initialising route collection: {route[1]}')
-    app.add_route(route[0])
+for route, tags in routes:
+    logger.info(f'Initialising route: {tags}')
+    app.include_router(route, prefix='/api/v0', tags=[tags])
 
 if __name__ == '__main__':
     run(
