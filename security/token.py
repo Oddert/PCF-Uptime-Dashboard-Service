@@ -29,12 +29,13 @@ def create_access_jwt(username: str, roles: List[str]):
     token_body = {
         'sub': username,
         'jti': uuid(),
+        'roles': roles,
         'exp': datetime.now() + timedelta(hours=1),
     }
     return jwt.encode(token_body, jwt_access_secret, algorithm=jwt_alg)
 
 
-def create_refresh_jwt(username: str, roles: List[str]):
+def create_refresh_jwt(username: str):
     """Creates a user Refresh Token."""
     token_body = {
         'sub': username,

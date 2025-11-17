@@ -72,11 +72,15 @@ def protected_endpoint(for_areas: Optional[List[str]] = None):
                 return await func(request=request, response=response, *args, **kwargs)
 
             except NeedsLogin as ex:
-                return respond_unauthenticated(message=ex.message, error=ex.desc)
+                return respond_unauthenticated(
+                    response=response, message=ex.message, error=ex.desc
+                )
             except NeedsAuthorisation as ex:
-                return respond_unauthorised(message=ex.message, error=ex.desc)
+                return respond_unauthorised(
+                    response=response, message=ex.message, error=ex.desc
+                )
             except Exception as ex:
-                return respond_server_error(error=str(ex))
+                return respond_server_error(response=response, error=str(ex))
 
         return decorated
 
