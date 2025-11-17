@@ -7,9 +7,11 @@ from config.database import get_db
 
 from models.instance_model import InstanceModel
 
+from security.middleware import protected_endpoint
+
 from utils.responses import respond_not_found, respond_ok, respond_server_error
 
-router = APIRouter(prefix='instance')
+router = APIRouter(prefix='/instance')
 
 
 @router.get('/')

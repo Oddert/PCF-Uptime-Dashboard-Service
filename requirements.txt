@@ -1,7 +1,9 @@
+alembic
 bcrypt
 fastapi
 loguru
 pre-commit
+psycopg2
 pyjwt
 pytz
 ruff
