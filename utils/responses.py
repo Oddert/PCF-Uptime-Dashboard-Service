@@ -20,6 +20,40 @@ def respond_ok(
         **kwargs,
     }
 
+def respond_unauthenticated(
+    response: Response | None = None,
+    message: str = 'You are not logged in. Please login and try again.',
+    status: int = 401,
+    error: str | None = 'Not authenticated.',
+    **kwargs,
+):
+    """Handless 401 responses to indicate the user's auth has failed or expired."""
+    if response:
+        response.status_code = http_statuses.HTTP_401_UNAUTHORIZED
+    return {
+        'status': status,
+        'message': message,
+        'error': error,
+        **kwargs,
+    }
+
+def respond_unauthorised(
+    response: Response | None = None,
+    message: str = 'You do not have sufficient privileges to access this resource.',
+    status: int = 403,
+    error: str | None = 'Unprivileged.',
+    **kwargs,
+):
+    """Handless 403 responses to indicate the user's auth is insufficient."""
+    if response:
+        response.status_code = http_statuses.HTTP_403_FORBIDDEN
+    return {
+        'status': status,
+        'message': message,
+        'error': error,
+        **kwargs,
+    }
+
 def respond_not_found(
     response: Response | None = None,
     message: str = 'The requested resource could not be found. Please check the request and try again.',
