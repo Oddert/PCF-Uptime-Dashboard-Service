@@ -1,6 +1,7 @@
 fastapi
 loguru
 pre-commit
+pytz
 ruff
 sqlalchemy
 uvicorn
