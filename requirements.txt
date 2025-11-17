@@ -1,6 +1,8 @@
+bcrypt
 fastapi
 loguru
 pre-commit
+pyjwt
 pytz
 ruff
 sqlalchemy
