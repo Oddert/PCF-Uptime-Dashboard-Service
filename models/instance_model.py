@@ -2,8 +2,8 @@ from datetime import datetime
 
 from sqlalchemy import Column
 from sqlalchemy.orm import Session
-from sqlalchemy.dialects.oracle import DATE, DOUBLE, INTEGER, NUMBER, NVARCHAR2, RAW
-from sqlalchemy.types import BLOB, FLOAT, TEXT
+from sqlalchemy.dialects.oracle import DATE, NUMBER, NVARCHAR2, RAW
+from sqlalchemy.types import BLOB, DOUBLE, INTEGER, FLOAT, TEXT
 
 from config.database import ORMBase
 from config.variables import timezone
