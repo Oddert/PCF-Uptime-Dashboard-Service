@@ -59,7 +59,7 @@ def syc_and_create_instances(
         fake_pcf_call = []
 
         for pcf_instance in fake_pcf_call:
-            queried_app_instance = InstanceModel.find_by_pcf_guid(pcf_instance['guid'])
+            queried_app_instance = InstanceModel.find_by_pcf_guid(pcf_instance['guid'], database)
             if not queried_app_instance:
                 queried_app_instance = InstanceModel(
                     pcf_app_name=pcf_instance['name'],
