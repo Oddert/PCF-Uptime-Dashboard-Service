@@ -20,6 +20,23 @@ def respond_ok(
         **kwargs,
     }
 
+def respond_bad_request(
+    response: Response | None = None,
+    message: str = 'The system was unable to process your request.',
+    status: int = 400,
+    error: str | None = 'Bad request.',
+    **kwargs,
+):
+    """Handless generic 400-band responses."""
+    if response:
+        response.status_code = http_statuses.HTTP_400_BAD_REQUEST
+    return {
+        'status': status,
+        'message': message,
+        'error': error,
+        **kwargs,
+    }
+
 def respond_unauthenticated(
     response: Response | None = None,
     message: str = 'You are not logged in. Please login and try again.',
