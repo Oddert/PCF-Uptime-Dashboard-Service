@@ -1,4 +1,5 @@
 """Handles all responses on the base endpoint "/"."""
+
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Request, Response
@@ -12,7 +13,8 @@ from models.user_model import UserModel
 from schemas.auth_schemas import PostLogin, PostSignup, PostTokenRefresh
 
 from security.hash import get_hashed_pwd, verify_hashed_pwd
-from security.token import create_access_jwt, create_refresh_jwt, validate_refresh_jwt
+from security.roles import validate_role_list
+from security.token import create_auth_tokens, validate_refresh_jwt
 
 from utils.exceptions import NeedsLogin, NotFound
 from utils.responses import (
@@ -44,10 +46,17 @@ def create_user(
                 response, message='A user with that username already exists.'
             )
 
-        # IDEA: check areas list is valid.
-        # IDEA: respond with tokens same as login
+        role_check_result = validate_role_list(user.areas)
+        roles_joined = ','.join(user.areas)
+
+        if not role_check_result.success:
+            return respond_bad_request(
+                response,
+                f'One of more requested roles is not valid. Please check the following roles: "{roles_joined}"',
+            )
+
         created_user = UserModel(
-            areas=','.join(user.areas),
+            areas=roles_joined,
             password=get_hashed_pwd(user.password),
             readable_name=user.readableName if user.readableName else user.username,
             username=user.username,
@@ -57,7 +66,14 @@ def create_user(
         database.commit()
         database.flush()
 
-        return respond_ok(response, user=created_user.to_json())
+        access_token, refresh_token = create_auth_tokens(retrieved_user)
+
+        return respond_ok(
+            response,
+            accessToken=access_token,
+            refreshToken=refresh_token,
+            user=created_user.to_json(),
+        )
     except Exception as ex:
         return respond_server_error(response, error=str(ex))
 
@@ -86,11 +102,7 @@ def login_user(
                 response, message='Incorrect username or password.'
             )
 
-        access_token = create_access_jwt(
-            retrieved_user.username,
-            retrieved_user.get_roles_as_list(),
-        )
-        refresh_token = create_refresh_jwt(retrieved_user.username)
+        access_token, refresh_token = create_auth_tokens(retrieved_user)
 
         return respond_ok(
             response, accessToken=access_token, refreshToken=refresh_token
@@ -132,7 +144,7 @@ def token_refresh(
 
         if not retrieved_user:
             raise NotFound('No user by that username exists.')
-        
+
         created_te_record = TokenExcludeModel(
             expires=datetime.fromtimestamp(token['exp']),
             jti=token['jti'],
@@ -141,11 +153,7 @@ def token_refresh(
         database.add(created_te_record)
         database.commit()
 
-        access_token = create_access_jwt(
-            retrieved_user.username,
-            retrieved_user.get_roles_as_list(),
-        )
-        refresh_token = create_refresh_jwt(retrieved_user.username)
+        access_token, refresh_token = create_auth_tokens(retrieved_user)
 
         return respond_ok(
             response, accessToken=access_token, refreshToken=refresh_token

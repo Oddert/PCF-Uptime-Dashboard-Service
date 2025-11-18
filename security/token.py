@@ -6,10 +6,12 @@ from datetime import datetime, timedelta
 from uuid import uuid4 as uuid
 from typing import List, Any
 
+from constants.auth_constants import jwt_alg
+
+from models.user_model import UserModel
 
 jwt_access_secret = '123456789'
 jwt_refresh_secret = '123456789'
-jwt_alg = 'HS256'
 
 
 class JWTDecodeResult:
@@ -66,3 +68,14 @@ def validate_access_jwt(access_token: str) -> JWTDecodeResult:
 def validate_refresh_jwt(refresh_token: str) -> JWTDecodeResult:
     """Decodes and validates a user's refresh token."""
     return validate_and_decode_jwt(refresh_token, jwt_access_secret)
+
+
+def create_auth_tokens(user: UserModel):
+    """Creates an Access and Refresh token after successful user authentication."""
+    access_token = create_access_jwt(
+        user.username,
+        user.get_roles_as_list(),
+    )
+    refresh_token = create_refresh_jwt(user.username)
+
+    return access_token, refresh_token

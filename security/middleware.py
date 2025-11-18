@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from fastapi import Request, Response
 
-from constants.auth_constants import auth_areas
+from constants.auth_constants import role_lookup
 
 from security.token import validate_access_jwt
 
@@ -13,15 +13,6 @@ from utils.responses import (
     respond_unauthorised,
     respond_server_error,
 )
-
-role_lookup = {
-    'PBD_User': {'access_codes': []},
-    'PBD_Stakeholder': {'access_codes': [auth_areas.STAKEHOLDER]},
-    'PBD_Product_owner': {'access_codes': [auth_areas.STAKEHOLDER, auth_areas.PO]},
-    'PBD_Admin': {
-        'access_codes': [auth_areas.STAKEHOLDER, auth_areas.PO, auth_areas.ADMIN]
-    },
-}
 
 
 def protected_endpoint(for_areas: Optional[List[str]] = None):
