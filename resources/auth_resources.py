@@ -40,12 +40,15 @@ def create_user(
                 response, message='A user with that username already exists.'
             )
 
+        # IDEA: check areas list is valid.
+        print('??')
         created_user = UserModel(
             areas=','.join(user.areas),
             password=get_hashed_pwd(user.password),
             readable_name=user.readableName if user.readableName else user.username,
             username=user.username,
         )
+        print(created_user)
 
         database.add(created_user)
         database.commit()
@@ -73,7 +76,7 @@ def login_user(
                 response, message='No user by that username exists.'
             )
 
-        if not verify_hashed_pwd(user.password, bytes.fromhex(retrieved_user.password)):  # type: ignore
+        if not verify_hashed_pwd(user.password, bytes(retrieved_user.password, 'utf-8')):  # type: ignore
             return respond_unauthenticated(
                 response, message='Incorrect username or password.'
             )
