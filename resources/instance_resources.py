@@ -1,9 +1,12 @@
 """Handles all responses on the base endpoint "/"."""
+from typing import List
 
 from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.orm import Session
 
 from config.database import get_db
+
+from constants.auth_constants import auth_areas
 
 from models.instance_model import InstanceModel
 
@@ -15,10 +18,15 @@ router = APIRouter(prefix='/instance')
 
 
 @router.get('/')
-def get_all_instances(
-    request: Request, response: Response, database: Session = Depends(get_db)
+@protected_endpoint()
+async def get_all_instances(
+    request: Request,
+    response: Response,
+    database: Session = Depends(get_db),
+    racfid: str = Depends(lambda: None),
+    roles: List[str] = Depends(lambda: None),
 ):
-    """Fallback endpoint for the root of the API."""
+    """Retrieves a list of all instances stored within the system."""
 
     try:
         instances = InstanceModel.find_all(database)
@@ -29,17 +37,20 @@ def get_all_instances(
         return respond_server_error(response, error=str(ex))
 
 
-@router.get('/{instance_id}')
-def get_single_instance(
+@router.get('/app-id/{instance_id}')
+@protected_endpoint()
+def get_single_instance_by_id(
     request: Request,
     response: Response,
     instance_id: str,
     database: Session = Depends(get_db),
+    racfid: str = Depends(lambda: None),
+    roles: List[str] = Depends(lambda: None),
 ):
-    """Fallback endpoint for the root of the API."""
+    """Retrieves a specific instance by ID. Note that this is the app's internal ID not the PCF GUD."""
 
     try:
-        instance = InstanceModel.find_by_id(instance_id, database)
+        instance = InstanceModel.find_by_app_id(instance_id, database)
 
         if not instance:
             return respond_not_found(
@@ -51,17 +62,47 @@ def get_single_instance(
         return respond_server_error(response, error=str(ex))
 
 
-@router.post('/')
-def syc_and_create_instances(
-    request: Request, response: Response, database: Session = Depends(get_db)
+@router.get('/pcf-id/{instance_id}')
+@protected_endpoint()
+def get_single_instance_by_pcf_guid(
+    request: Request,
+    response: Response,
+    instance_id: str,
+    database: Session = Depends(get_db),
+    racfid: str = Depends(lambda: None),
+    roles: List[str] = Depends(lambda: None),
 ):
-    """Fallback endpoint for the root of the API."""
+    """Retrieves a specific instance by ID. Note that this is the PCF GUD the app's internal ID."""
+
+    try:
+        instance = InstanceModel.find_by_pcf_guid(instance_id, database)
+
+        if not instance:
+            return respond_not_found(
+                response, error=f'No instance found for PCF ID "{instance_id}".'
+            )
+
+        return respond_ok(response, instance=instance.to_json())
+    except Exception as ex:
+        return respond_server_error(response, error=str(ex))
+
+
+@router.post('/')
+@protected_endpoint(for_areas=[auth_areas.ADMIN])
+def syc_and_create_instances(
+    request: Request, response: Response, database: Session = Depends(get_db),
+    racfid: str = Depends(lambda: None),
+    roles: List[str] = Depends(lambda: None),
+):
+    """Checks all PCF spaces to create or delete instances based on the current makeup of PCF."""
 
     try:
         fake_pcf_call = []
 
         for pcf_instance in fake_pcf_call:
-            queried_app_instance = InstanceModel.find_by_pcf_guid(pcf_instance['guid'], database)
+            queried_app_instance = InstanceModel.find_by_pcf_guid(
+                pcf_instance['guid'], database
+            )
             if not queried_app_instance:
                 queried_app_instance = InstanceModel(
                     pcf_app_name=pcf_instance['name'],
