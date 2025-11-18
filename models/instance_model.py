@@ -1,9 +1,8 @@
 from datetime import datetime
 
-from sqlalchemy import Column
-from sqlalchemy.orm import Session
-from sqlalchemy.dialects.oracle import DATE, NUMBER, NVARCHAR2, RAW
 from sqlalchemy.dialects.postgresql import BYTEA, DOUBLE_PRECISION
+from sqlalchemy.dialects.oracle import DATE, NUMBER, NVARCHAR2, RAW
+from sqlalchemy.orm import Mapped, mapped_column, Session
 from sqlalchemy.types import BLOB, DOUBLE, INTEGER, FLOAT, TEXT
 
 from config.database import ORMBase
@@ -17,49 +16,51 @@ class InstanceModel(ORMBase):
 
     __tablename__ = 'PDB_INSTANCE'
 
-    contact_info = Column(
+    contact_info: Mapped[str] = mapped_column(
         NVARCHAR2(2000).with_variant(TEXT, 'sqlite', 'postgresql'), nullable=True
     )
-    instance_id = Column(
+    instance_id: Mapped[bytes] = mapped_column(
         RAW(16).with_variant(BLOB, 'sqlite').with_variant(BYTEA, 'postgresql'),
         default=default_uuid,
         nullable=False,
         primary_key=True,
         unique=True,
     )
-    last_updated = Column(DATE, nullable=False, default=lambda: datetime.now(timezone))
-    message = Column(
+    last_updated: Mapped[datetime] = mapped_column(
+        DATE, nullable=False, default=lambda: datetime.now(timezone)
+    )
+    message: Mapped[str] = mapped_column(
         NVARCHAR2(1000).with_variant(TEXT, 'sqlite', 'postgresql'), nullable=True
     )
-    pcf_app_name = Column(
+    pcf_app_name: Mapped[str] = mapped_column(
         NVARCHAR2(255).with_variant(TEXT, 'sqlite', 'postgresql'), nullable=False
     )
-    pcf_cpu = Column(
+    pcf_cpu: Mapped[float] = mapped_column(
         NUMBER().with_variant(FLOAT, 'sqlite', 'postgresql'), nullable=True
     )
-    pcf_guid = Column(
+    pcf_guid: Mapped[str] = mapped_column(
         NVARCHAR2(255).with_variant(TEXT, 'sqlite', 'postgresql'), nullable=False
     )
-    pcf_space = Column(
+    pcf_space: Mapped[str] = mapped_column(
         NVARCHAR2(20).with_variant(TEXT, 'sqlite', 'postgresql'), nullable=False
     )
-    pcf_instances_total = Column(
+    pcf_instances_total: Mapped[int] = mapped_column(
         NUMBER().with_variant(INTEGER, 'sqlite', 'postgresql'),
         nullable=False,
         default=1,
     )
-    pcf_ram = Column(
+    pcf_ram: Mapped[float] = mapped_column(
         NUMBER().with_variant(FLOAT, 'sqlite', 'postgresql'), nullable=True
     )
-    readable_name = Column(
+    readable_name: Mapped[str] = mapped_column(
         NVARCHAR2(255).with_variant(TEXT, 'sqlite', 'postgresql'), nullable=True
     )
-    status = Column(
+    status: Mapped[str] = mapped_column(
         NVARCHAR2(20).with_variant(TEXT, 'sqlite', 'postgresql'),
         nullable=False,
         default='UNKNOWN',
     )
-    tick_override = Column(
+    tick_override: Mapped[float] = mapped_column(
         NUMBER()
         .with_variant(DOUBLE, 'sqlite')
         .with_variant(DOUBLE_PRECISION, 'postgresql'),
