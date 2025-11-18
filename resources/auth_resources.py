@@ -1,19 +1,23 @@
 """Handles all responses on the base endpoint "/"."""
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.orm import Session
 
 from config.database import get_db
 
+from models.token_exclude_model import TokenExcludeModel
 from models.user_model import UserModel
 
-from schemas.auth_schemas import PostLogin, PostSignup
+from schemas.auth_schemas import PostLogin, PostSignup, PostTokenRefresh
 
 from security.hash import get_hashed_pwd, verify_hashed_pwd
-from security.token import create_access_jwt, create_refresh_jwt
+from security.token import create_access_jwt, create_refresh_jwt, validate_refresh_jwt
 
+from utils.exceptions import NeedsLogin, NotFound
 from utils.responses import (
     respond_bad_request,
+    respond_not_found,
     respond_ok,
     respond_server_error,
     respond_unauthenticated,
@@ -41,14 +45,13 @@ def create_user(
             )
 
         # IDEA: check areas list is valid.
-        print('??')
+        # IDEA: respond with tokens same as login
         created_user = UserModel(
             areas=','.join(user.areas),
             password=get_hashed_pwd(user.password),
             readable_name=user.readableName if user.readableName else user.username,
             username=user.username,
         )
-        print(created_user)
 
         database.add(created_user)
         database.commit()
@@ -76,18 +79,80 @@ def login_user(
                 response, message='No user by that username exists.'
             )
 
-        if not verify_hashed_pwd(user.password, bytes(retrieved_user.password, 'utf-8')):  # type: ignore
+        if not verify_hashed_pwd(
+            user.password, bytes(retrieved_user.password, 'utf-8')
+        ):
             return respond_unauthenticated(
                 response, message='Incorrect username or password.'
             )
 
         access_token = create_access_jwt(
-            retrieved_user.username, retrieved_user.get_roles_as_list() # type: ignore
+            retrieved_user.username,
+            retrieved_user.get_roles_as_list(),
         )
-        refresh_token = create_refresh_jwt(retrieved_user.username) # type: ignore
+        refresh_token = create_refresh_jwt(retrieved_user.username)
 
         return respond_ok(
             response, accessToken=access_token, refreshToken=refresh_token
         )
+    except Exception as ex:
+        return respond_server_error(response, error=str(ex))
+
+
+@router.post('/token-refresh')
+def token_refresh(
+    request: Request,
+    response: Response,
+    token_request: PostTokenRefresh,
+    database: Session = Depends(get_db),
+):
+    """
+    Re-authenticates a user using their one-time use refresh token.
+    Adds the refresh token to the exclude list and provides a new Access and Refresh token pair.
+    """
+
+    try:
+        token_verify_result = validate_refresh_jwt(token_request.refreshToken)
+
+        if not token_verify_result.success:
+            raise NeedsLogin(
+                token_verify_result.error
+                if token_verify_result.error
+                else 'Token decode failed.'
+            )
+
+        token = token_verify_result.payload
+
+        retrieved_te_record = TokenExcludeModel.find_by_jti(token['jti'], database)
+
+        if retrieved_te_record:
+            raise NeedsLogin('Refresh token has already been used.')
+
+        retrieved_user = UserModel.find_by_username(token['sub'], database)
+
+        if not retrieved_user:
+            raise NotFound('No user by that username exists.')
+        
+        created_te_record = TokenExcludeModel(
+            expires=datetime.fromtimestamp(token['exp']),
+            jti=token['jti'],
+        )
+
+        database.add(created_te_record)
+        database.commit()
+
+        access_token = create_access_jwt(
+            retrieved_user.username,
+            retrieved_user.get_roles_as_list(),
+        )
+        refresh_token = create_refresh_jwt(retrieved_user.username)
+
+        return respond_ok(
+            response, accessToken=access_token, refreshToken=refresh_token
+        )
+    except NotFound as ex:
+        return respond_not_found(response, ex.message)
+    except NeedsLogin as ex:
+        return respond_unauthenticated(response, ex.message)
     except Exception as ex:
         return respond_server_error(response, error=str(ex))

@@ -51,9 +51,9 @@ def validate_and_decode_jwt(token: str, secret: str) -> JWTDecodeResult:
         payload = jwt.decode(token, secret, algorithms=[jwt_alg])
         return JWTDecodeResult(None, True, payload)
     except jwt.ExpiredSignatureError:
-        return JWTDecodeResult('Access token has expired.')
+        return JWTDecodeResult('Token has expired.')
     except jwt.InvalidTokenError:
-        return JWTDecodeResult('Access token is invalid.')
+        return JWTDecodeResult('Token is invalid.')
     except Exception as ex:
         return JWTDecodeResult(str(ex))
 
