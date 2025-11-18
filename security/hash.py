@@ -5,7 +5,7 @@ def get_hashed_pwd(password: str):
     '''Creates a hashed password for storage in the database.'''
     password_bytes = password.encode('utf-8')
     salt = bcrypt.gensalt()
-    return bcrypt.hashpw(password_bytes, salt)
+    return bcrypt.hashpw(password_bytes, salt).decode()
 
 def verify_hashed_pwd(password: str, hashed_password: bytes):
     '''Compares a user-entered password to a retrieved hashed password.'''
