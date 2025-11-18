@@ -66,7 +66,7 @@ def protected_endpoint(for_areas: Optional[List[str]] = None):
                         'Insufficient roles for requested resource.'
                     )
 
-                kwargs['racfid'] = token['username']
+                kwargs['racfid'] = token['sub']
                 kwargs['roles'] = token['roles']
 
                 return await func(request=request, response=response, *args, **kwargs)
@@ -93,6 +93,6 @@ def extract_access_token(request: Request) -> str:
     if not auth:
         raise NeedsLogin('No authorisation header found in request.')
     auth_segments = auth.split(' ')
-    if not auth.lower().startswith('Bearer ') or len(auth_segments) != 2:
+    if not auth.lower().startswith('bearer ') or len(auth_segments) != 2:
         raise NeedsLogin('Header "Authorization" was not a valid Bearer token.')
     return auth_segments[1]
