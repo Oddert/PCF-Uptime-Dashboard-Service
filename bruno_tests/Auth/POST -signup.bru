@@ -1,0 +1,28 @@
+meta {
+  name: POST /signup
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:8080/api/v0/auth/signup
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "username": "Oddert",
+    "password": "password",
+    "readableName": "Robyn",
+    "areas": [
+      "PBD_User",
+      "PBD_Admin"
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

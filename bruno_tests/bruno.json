@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "PCF Dashboard",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
