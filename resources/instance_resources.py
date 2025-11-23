@@ -55,29 +55,21 @@ async def get_pcf_call(
         instance_map = {}
         for organisation in fake_pcf_call:
             if organisation['org_id'] not in instance_map:
-                print(10)
                 instance_map[organisation['org_id']] = {
                     'name': organisation['org_name'],
                     'spaces': {},
                 }
-            print(20)
 
             for instance in organisation['instances']:
-                print(instance)
-                print(instance['space_id'])
                 if instance['space_id'] not in instance_map[organisation['org_id']]['spaces']:
-                    print(30)
                     instance_map[organisation['org_id']]['spaces'][instance['space_id']] = {
                         'name': spaces_by_id[instance['space_id']],
                         'instances': []
                     }
-                    print(30)
 
-                print(40)
                 instance_map[organisation['org_id']]['spaces'][instance['space_id']][
                     'instances'
                 ].append(organisation)
-                print(40)
 
         return respond_ok(
             response,
