@@ -9,7 +9,7 @@ class RoleValidateResult:
     """Represents the result of a role list check."""
 
     def __init__(self, invalid_roles: Optional[List[str]] = []) -> None:
-        self.success = invalid_roles and len(invalid_roles) > 0
+        self.success = len(invalid_roles) > 0 if invalid_roles else True
         self.invalid_roles = invalid_roles
 
 
