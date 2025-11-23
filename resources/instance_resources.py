@@ -1,4 +1,5 @@
 """Handles all responses on the base endpoint "/"."""
+
 from typing import List
 
 from fastapi import APIRouter, Depends, Request, Response
@@ -10,7 +11,7 @@ from constants.auth_constants import auth_areas
 
 from models.instance_model import InstanceModel
 
-from mocks.fake_pcf_api import fake_pcf_call
+from mocks.fake_pcf_api import fake_pcf_call, spaces_by_id
 
 from security.middleware import protected_endpoint
 
@@ -34,6 +35,53 @@ async def get_all_instances(
         instances = InstanceModel.find_all(database)
         return respond_ok(
             response, instances=[instance.to_json() for instance in instances]
+        )
+    except Exception as ex:
+        return respond_server_error(response, error=str(ex))
+
+
+@router.get('/debug')
+@protected_endpoint()
+async def get_pcf_call(
+    request: Request,
+    response: Response,
+    database: Session = Depends(get_db),
+    racfid: str = Depends(lambda: None),
+    roles: List[str] = Depends(lambda: None),
+):
+    """Retrieves a list of all instances stored within the system."""
+
+    try:
+        instance_map = {}
+        for organisation in fake_pcf_call:
+            if organisation['org_id'] not in instance_map:
+                print(10)
+                instance_map[organisation['org_id']] = {
+                    'name': organisation['org_name'],
+                    'spaces': {},
+                }
+            print(20)
+
+            for instance in organisation['instances']:
+                print(instance)
+                print(instance['space_id'])
+                if instance['space_id'] not in instance_map[organisation['org_id']]['spaces']:
+                    print(30)
+                    instance_map[organisation['org_id']]['spaces'][instance['space_id']] = {
+                        'name': spaces_by_id[instance['space_id']],
+                        'instances': []
+                    }
+                    print(30)
+
+                print(40)
+                instance_map[organisation['org_id']]['spaces'][instance['space_id']][
+                    'instances'
+                ].append(organisation)
+                print(40)
+
+        return respond_ok(
+            response,
+            instances=instance_map,
         )
     except Exception as ex:
         return respond_server_error(response, error=str(ex))
@@ -92,7 +140,9 @@ def get_single_instance_by_pcf_guid(
 @router.post('/')
 @protected_endpoint(for_areas=[auth_areas.ADMIN])
 def syc_and_create_instances(
-    request: Request, response: Response, database: Session = Depends(get_db),
+    request: Request,
+    response: Response,
+    database: Session = Depends(get_db),
     racfid: str = Depends(lambda: None),
     roles: List[str] = Depends(lambda: None),
 ):
