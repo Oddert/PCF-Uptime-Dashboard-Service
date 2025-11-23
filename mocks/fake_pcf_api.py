@@ -21,6 +21,19 @@ space_ids = {
     'MEMALPHA-PRD-STATIC': '2cf9ecde-6487-4b1a-8253-6adc0a723bd2',
 }
 
+spaces_by_id = {
+    '2f35885d-0c9d-4423-83ad-fd05066f8576': 'PRD',
+    'a6cfa3fa-4001-4422-bd2e-2a515349c4ca': 'PRD-STATIC',
+    'c8eeabaf-ea99-4620-be01-e83af8894c75': 'PRD',
+    'ec0f7dcb-b313-4d71-a964-6e8cacbef2ed': 'PRD-STATIC',
+    '6e414b78-e1dc-4845-afd3-a0e513367427': 'PRD',
+    '04b3da5d-4869-4cf4-8c79-2486e0de00ad': 'PRD-STATIC',
+    '2757a327-1a5b-4992-995c-8986e2bf525c': 'PRD',
+    'a6d336cb-459b-4a32-b46e-126d18941df4': 'PRD-STATIC',
+    'f5ffd863-2930-436b-b36b-8e095fd25626': 'PRD',
+    '2cf9ecde-6487-4b1a-8253-6adc0a723bd2': 'PRD-STATIC',
+}
+
 
 app_ids = {
     'actions-reminders': '09677995-1651-4697-aa59-2ecf375de7bc',
@@ -54,6 +67,7 @@ fake_pcf_call: list[dict[str, Any]] = [
             {
                 'guid': app_ids['actions-reminders'],
                 'name': 'actions-reminders',
+                'space_id': space_ids['PICOE-PRD-STATIC'],
                 'desired_state': 'RUNNING',
                 'total_desired_instances': 0,
                 'created_at': '2025-03-17T21:41:30Z',
@@ -110,6 +124,7 @@ fake_pcf_call: list[dict[str, Any]] = [
             {
                 'guid': app_ids['staff-viewer'],
                 'name': 'staff-viewer',
+                'space_id': space_ids['PICOE-PRD-STATIC'],
                 'desired_state': 'RUNNING',
                 'total_desired_instances': 0,
                 'created_at': '2025-03-17T21:41:30Z',
@@ -166,6 +181,7 @@ fake_pcf_call: list[dict[str, Any]] = [
             {
                 'guid': app_ids['viewpoint'],
                 'name': 'viewpoint',
+                'space_id': space_ids['PICOE-PRD-STATIC'],
                 'desired_state': 'RUNNING',
                 'total_desired_instances': 0,
                 'created_at': '2025-03-17T21:41:30Z',
@@ -222,6 +238,7 @@ fake_pcf_call: list[dict[str, Any]] = [
             {
                 'guid': app_ids['performance-management'],
                 'name': 'performance-management',
+                'space_id': space_ids['PICOE-PRD-STATIC'],
                 'desired_state': 'RUNNING',
                 'total_desired_instances': 0,
                 'created_at': '2025-03-17T21:41:30Z',
@@ -278,6 +295,7 @@ fake_pcf_call: list[dict[str, Any]] = [
             {
                 'guid': app_ids['reporting-hub'],
                 'name': 'reporting-hub',
+                'space_id': space_ids['PICOE-PRD-STATIC'],
                 'desired_state': 'RUNNING',
                 'total_desired_instances': 0,
                 'created_at': '2025-03-17T21:41:30Z',
@@ -335,6 +353,7 @@ fake_pcf_call: list[dict[str, Any]] = [
             {
                 'guid': app_ids['pi-services-viewpoint'],
                 'name': 'pi-services-viewpoint',
+                'space_id': space_ids['PICOE-PRD'],
                 'desired_state': 'RUNNING',
                 'total_desired_instances': 0,
                 'created_at': '2025-03-17T21:41:30Z',
@@ -391,6 +410,7 @@ fake_pcf_call: list[dict[str, Any]] = [
             {
                 'guid': app_ids['pi-services-performance-management'],
                 'name': 'pi-services-performance-management',
+                'space_id': space_ids['PICOE-PRD'],
                 'desired_state': 'RUNNING',
                 'total_desired_instances': 0,
                 'created_at': '2025-03-17T21:41:30Z',
@@ -447,6 +467,7 @@ fake_pcf_call: list[dict[str, Any]] = [
             {
                 'guid': app_ids['pi-services-reporting-hub'],
                 'name': 'pi-services-reporting-hub',
+                'space_id': space_ids['PICOE-PRD'],
                 'desired_state': 'RUNNING',
                 'total_desired_instances': 0,
                 'created_at': '2025-03-17T21:41:30Z',
@@ -504,6 +525,7 @@ fake_pcf_call: list[dict[str, Any]] = [
             {
                 'guid': app_ids['cost-allocations'],
                 'name': 'cost-allocations',
+                'space_id': space_ids['PICOEFIN-PRD-STATIC'],
                 'desired_state': 'RUNNING',
                 'total_desired_instances': 0,
                 'created_at': '2025-03-17T21:41:30Z',
@@ -560,6 +582,7 @@ fake_pcf_call: list[dict[str, Any]] = [
             {
                 'guid': app_ids['cost-insights'],
                 'name': 'cost-insights',
+                'space_id': space_ids['PICOEFIN-PRD-STATIC'],
                 'desired_state': 'RUNNING',
                 'total_desired_instances': 0,
                 'created_at': '2025-03-17T21:41:30Z',
@@ -617,6 +640,7 @@ fake_pcf_call: list[dict[str, Any]] = [
             {
                 'guid': app_ids['pi-services-cost-allocations'],
                 'name': 'pi-services-cost-allocations',
+                'space_id': space_ids['PICOEFIN-PRD'],
                 'desired_state': 'RUNNING',
                 'total_desired_instances': 0,
                 'created_at': '2025-03-17T21:41:30Z',
@@ -673,6 +697,7 @@ fake_pcf_call: list[dict[str, Any]] = [
             {
                 'guid': app_ids['pi-services-cost-insights'],
                 'name': 'pi-services-cost-insights',
+                'space_id': space_ids['PICOEFIN-PRD'],
                 'desired_state': 'RUNNING',
                 'total_desired_instances': 0,
                 'created_at': '2025-03-17T21:41:30Z',
@@ -730,6 +755,7 @@ fake_pcf_call: list[dict[str, Any]] = [
             {
                 'guid': app_ids['aiden'],
                 'name': 'aiden',
+                'space_id': space_ids['AIDEN-PRD-STATIC'],
                 'desired_state': 'RUNNING',
                 'total_desired_instances': 0,
                 'created_at': '2025-03-17T21:41:30Z',
@@ -787,6 +813,7 @@ fake_pcf_call: list[dict[str, Any]] = [
             {
                 'guid': app_ids['pi-services-aiden'],
                 'name': 'pi-services-aiden',
+                'space_id': space_ids['AIDEN-PRD'],
                 'desired_state': 'RUNNING',
                 'total_desired_instances': 0,
                 'created_at': '2025-03-17T21:41:30Z',
@@ -843,6 +870,7 @@ fake_pcf_call: list[dict[str, Any]] = [
             {
                 'guid': app_ids['pi-services-aiden-rag'],
                 'name': 'pi-services-aiden-rag',
+                'space_id': space_ids['AIDEN-PRD'],
                 'desired_state': 'RUNNING',
                 'total_desired_instances': 0,
                 'created_at': '2025-03-17T21:41:30Z',
@@ -900,6 +928,7 @@ fake_pcf_call: list[dict[str, Any]] = [
             {
                 'guid': app_ids['whatif-core'],
                 'name': 'whatif-core',
+                'space_id': space_ids['WHATIF-PRD-STATIC'],
                 'desired_state': 'RUNNING',
                 'total_desired_instances': 0,
                 'created_at': '2025-03-17T21:41:30Z',
@@ -957,6 +986,7 @@ fake_pcf_call: list[dict[str, Any]] = [
             {
                 'guid': app_ids['whatif-core-backend'],
                 'name': 'whatif-core-backend',
+                'space_id': space_ids['WHATIF-PRD'],
                 'desired_state': 'RUNNING',
                 'total_desired_instances': 0,
                 'created_at': '2025-03-17T21:41:30Z',
@@ -1014,6 +1044,7 @@ fake_pcf_call: list[dict[str, Any]] = [
             {
                 'guid': app_ids['starfleet-archives'],
                 'name': 'starfleet-archives',
+                'space_id': space_ids['MEMALPHA-PRD-STATIC'],
                 'desired_state': 'RUNNING',
                 'total_desired_instances': 0,
                 'created_at': '2025-03-17T21:41:30Z',
@@ -1071,6 +1102,7 @@ fake_pcf_call: list[dict[str, Any]] = [
             {
                 'guid': app_ids['pi-services-starfleet-archives'],
                 'name': 'pi-services-starfleet-archives',
+                'space_id': space_ids['MEMALPHA-PRD'],
                 'desired_state': 'RUNNING',
                 'total_desired_instances': 0,
                 'created_at': '2025-03-17T21:41:30Z',
