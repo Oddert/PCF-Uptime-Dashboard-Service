@@ -49,47 +49,6 @@ async def get_all_instances(
         return respond_server_error(response, error=str(ex))
 
 
-@router.get('/debug')
-@protected_endpoint()
-async def debug_get_pcf_call(
-    request: Request,
-    response: Response,
-    database: Session = Depends(get_db),
-    racfid: str = Depends(lambda: None),
-    roles: List[str] = Depends(lambda: None),
-):
-    """Retrieves a list of all instances stored within the system."""
-
-    try:
-        instance_map = {}
-        for organisation in fake_pcf_call:
-            if organisation['org_id'] not in instance_map:
-                instance_map[organisation['org_id']] = {
-                    'name': organisation['org_name'],
-                    'spaces': {},
-                }
-
-            for instance in organisation['instances']:
-                if (
-                    instance['space_id']
-                    not in instance_map[organisation['org_id']]['spaces']
-                ):
-                    instance_map[organisation['org_id']]['spaces'][
-                        instance['space_id']
-                    ] = {'name': spaces_by_id[instance['space_id']], 'instances': []}
-
-                instance_map[organisation['org_id']]['spaces'][instance['space_id']][
-                    'instances'
-                ].append(organisation)
-
-        return respond_ok(
-            response,
-            instances=instance_map,
-        )
-    except Exception as ex:
-        return respond_server_error(response, error=str(ex))
-
-
 @router.get('/app-id/{instance_id}')
 @protected_endpoint()
 async def get_single_instance_by_id(
@@ -111,13 +70,19 @@ async def get_single_instance_by_id(
                 response, error=f'No instance found for ID "{instance_id}".'
             )
 
-        if instance['guid'] not in org_ids:
+        if instance.pcf_org_id not in org_ids:
             return respond_unauthorised(
                 response,
                 f'You do not have the required roles to access the instance with ID "{instance_id}".',
             )
 
         return respond_ok(response, instance=instance.to_json())
+    except ValueError as ex:
+        return respond_not_found(
+            response,
+            message=f'Instance ID of "{instance_id}" is not valid.',
+            error=str(ex),
+        )
     except Exception as ex:
         return respond_server_error(response, error=str(ex))
 
@@ -143,13 +108,19 @@ async def get_single_instance_by_pcf_guid(
                 response, error=f'No instance found for PCF ID "{instance_id}".'
             )
 
-        if instance['guid'] not in org_ids:
+        if instance.pcf_org_id not in org_ids:
             return respond_unauthorised(
                 response,
                 f'You do not have the required roles to access the instance with ID "{instance_id}".',
             )
 
         return respond_ok(response, instance=instance.to_json())
+    except ValueError as ex:
+        return respond_not_found(
+            response,
+            message=f'Instance PCF GUID of "{instance_id}" is not valid.',
+            error=str(ex),
+        )
     except Exception as ex:
         return respond_server_error(response, error=str(ex))
 
@@ -202,6 +173,47 @@ async def syc_and_create_instances(
             response,
             message='Instance list created and synced with PCF.',
             updated=datetime.now(timezone),
+        )
+    except Exception as ex:
+        return respond_server_error(response, error=str(ex))
+
+
+@router.get('/debug')
+@protected_endpoint()
+async def debug_get_pcf_call(
+    request: Request,
+    response: Response,
+    database: Session = Depends(get_db),
+    racfid: str = Depends(lambda: None),
+    roles: List[str] = Depends(lambda: None),
+):
+    """Retrieves a list of all instances stored within the system."""
+
+    try:
+        instance_map = {}
+        for organisation in fake_pcf_call:
+            if organisation['org_id'] not in instance_map:
+                instance_map[organisation['org_id']] = {
+                    'name': organisation['org_name'],
+                    'spaces': {},
+                }
+
+            for instance in organisation['instances']:
+                if (
+                    instance['space_id']
+                    not in instance_map[organisation['org_id']]['spaces']
+                ):
+                    instance_map[organisation['org_id']]['spaces'][
+                        instance['space_id']
+                    ] = {'name': spaces_by_id[instance['space_id']], 'instances': []}
+
+                instance_map[organisation['org_id']]['spaces'][instance['space_id']][
+                    'instances'
+                ].append(organisation)
+
+        return respond_ok(
+            response,
+            instances=instance_map,
         )
     except Exception as ex:
         return respond_server_error(response, error=str(ex))
