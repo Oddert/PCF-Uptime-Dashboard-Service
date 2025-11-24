@@ -83,6 +83,7 @@ class InstanceModel(ORMBase):
             'pcfAppName': self.pcf_app_name,
             'pcfCpu': self.pcf_cpu,
             'pcfInstancesTotal': self.pcf_instances_total,
+            'pcfGuid': self.pcf_guid,
             'pcfOrganisationId': self.pcf_org_id,
             'pcfRam': self.pcf_ram,
             'pcfSpaceId': self.pcf_space_id,
