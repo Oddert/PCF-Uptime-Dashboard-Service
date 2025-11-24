@@ -1,11 +1,13 @@
 """Handles all responses on the base endpoint "/"."""
 
 from typing import List
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.orm import Session
 
 from config.database import get_db
+from config.variables import timezone
 
 from constants.auth_constants import auth_areas
 
@@ -14,6 +16,7 @@ from models.instance_model import InstanceModel
 from mocks.fake_pcf_api import fake_pcf_call, spaces_by_id
 
 from security.middleware import protected_endpoint
+from security.roles import get_org_ids_for_user
 
 from utils.responses import respond_not_found, respond_ok, respond_server_error
 
@@ -32,7 +35,8 @@ async def get_all_instances(
     """Retrieves a list of all instances stored within the system."""
 
     try:
-        instances = InstanceModel.find_all(database)
+        org_ids = get_org_ids_for_user(roles)
+        instances = InstanceModel.find_by_org_id_list(org_ids, database)
         return respond_ok(
             response, instances=[instance.to_json() for instance in instances]
         )
@@ -61,11 +65,13 @@ async def get_pcf_call(
                 }
 
             for instance in organisation['instances']:
-                if instance['space_id'] not in instance_map[organisation['org_id']]['spaces']:
-                    instance_map[organisation['org_id']]['spaces'][instance['space_id']] = {
-                        'name': spaces_by_id[instance['space_id']],
-                        'instances': []
-                    }
+                if (
+                    instance['space_id']
+                    not in instance_map[organisation['org_id']]['spaces']
+                ):
+                    instance_map[organisation['org_id']]['spaces'][
+                        instance['space_id']
+                    ] = {'name': spaces_by_id[instance['space_id']], 'instances': []}
 
                 instance_map[organisation['org_id']]['spaces'][instance['space_id']][
                     'instances'
@@ -81,7 +87,7 @@ async def get_pcf_call(
 
 @router.get('/app-id/{instance_id}')
 @protected_endpoint()
-def get_single_instance_by_id(
+async def get_single_instance_by_id(
     request: Request,
     response: Response,
     instance_id: str,
@@ -106,7 +112,7 @@ def get_single_instance_by_id(
 
 @router.get('/pcf-id/{instance_id}')
 @protected_endpoint()
-def get_single_instance_by_pcf_guid(
+async def get_single_instance_by_pcf_guid(
     request: Request,
     response: Response,
     instance_id: str,
@@ -131,7 +137,7 @@ def get_single_instance_by_pcf_guid(
 
 @router.post('/')
 @protected_endpoint(for_areas=[auth_areas.ADMIN])
-def syc_and_create_instances(
+async def syc_and_create_instances(
     request: Request,
     response: Response,
     database: Session = Depends(get_db),
@@ -146,21 +152,36 @@ def syc_and_create_instances(
                 queried_app_instance = InstanceModel.find_by_pcf_guid(
                     pcf_instance['guid'], database
                 )
-                if not queried_app_instance:
+                if queried_app_instance:
+                    queried_app_instance.created_at = pcf_instance['created_at']
+                    queried_app_instance.pcf_app_name = pcf_instance['name']
+                    queried_app_instance.pcf_cpu = 0
+                    queried_app_instance.pcf_org_id = pcf_org['org_id']
+                    queried_app_instance.pcf_space_id = pcf_instance['space_id']
+                    queried_app_instance.pcf_instances_total = 1
+                    queried_app_instance.pcf_ram = 1
+                    queried_app_instance.readable_name = pcf_instance['name']
+                    queried_app_instance.updated_at = pcf_instance['updated_at']
+                else:
                     queried_app_instance = InstanceModel(
+                        created_at=pcf_instance['created_at'],
                         pcf_app_name=pcf_instance['name'],
                         pcf_cpu=0,
                         pcf_guid=pcf_instance['guid'],
-                        pcf_space='',
+                        pcf_org_id=pcf_org['org_id'],
+                        pcf_space_id=pcf_instance['space_id'],
                         pcf_instances_total=1,
                         pcf_ram=1,
                         readable_name=pcf_instance['name'],
+                        status=pcf_instance['desired_state'],
+                        updated_at=pcf_instance['updated_at'],
                     )
                     database.add(queried_app_instance)
 
         database.commit()
         return respond_ok(
-            response, message='Instance list created and synced with PCF.'
+            response, message='Instance list created and synced with PCF.',
+            updated=datetime.now(timezone),
         )
     except Exception as ex:
         return respond_server_error(response, error=str(ex))

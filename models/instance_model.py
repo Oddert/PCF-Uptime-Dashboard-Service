@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List
 
 from sqlalchemy.dialects.postgresql import BYTEA, DOUBLE_PRECISION
 from sqlalchemy.dialects.oracle import DATE, NUMBER, NVARCHAR2, RAW
@@ -19,15 +20,15 @@ class InstanceModel(ORMBase):
     contact_info: Mapped[str] = mapped_column(
         NVARCHAR2(2000).with_variant(TEXT, 'sqlite', 'postgresql'), nullable=True
     )
+    created_at: Mapped[datetime] = mapped_column(
+        DATE, nullable=False, default=lambda: datetime.now(timezone)
+    )
     instance_id: Mapped[bytes] = mapped_column(
         RAW(16).with_variant(BLOB, 'sqlite').with_variant(BYTEA, 'postgresql'),
         default=default_uuid,
         nullable=False,
         primary_key=True,
         unique=True,
-    )
-    last_updated: Mapped[datetime] = mapped_column(
-        DATE, nullable=False, default=lambda: datetime.now(timezone)
     )
     message: Mapped[str] = mapped_column(
         NVARCHAR2(1000).with_variant(TEXT, 'sqlite', 'postgresql'), nullable=True
@@ -41,7 +42,10 @@ class InstanceModel(ORMBase):
     pcf_guid: Mapped[str] = mapped_column(
         NVARCHAR2(255).with_variant(TEXT, 'sqlite', 'postgresql'), nullable=False
     )
-    pcf_space: Mapped[str] = mapped_column(
+    pcf_space_id: Mapped[str] = mapped_column(
+        NVARCHAR2(20).with_variant(TEXT, 'sqlite', 'postgresql'), nullable=False
+    )
+    pcf_org_id: Mapped[str] = mapped_column(
         NVARCHAR2(20).with_variant(TEXT, 'sqlite', 'postgresql'), nullable=False
     )
     pcf_instances_total: Mapped[int] = mapped_column(
@@ -66,20 +70,26 @@ class InstanceModel(ORMBase):
         .with_variant(DOUBLE_PRECISION, 'postgresql'),
         nullable=True,
     )
+    updated_at: Mapped[datetime] = mapped_column(
+        DATE, nullable=False, default=lambda: datetime.now(timezone)
+    )
 
     def to_json(self):
         return {
             'contactInfo': self.contact_info,
-            'instanceId': self.instance_id,
-            'lastUpdated': self.last_updated,
+            'createdAt': self.created_at,
+            'instanceId': self.instance_id.hex(),
             'message': self.message,
             'pcfAppName': self.pcf_app_name,
             'pcfCpu': self.pcf_cpu,
             'pcfInstancesTotal': self.pcf_instances_total,
+            'pcfOrganisationId': self.pcf_org_id,
             'pcfRam': self.pcf_ram,
+            'pcfSpaceId': self.pcf_space_id,
             'readableName': self.readable_name,
             'status': self.status,
             'tickOverride': self.tick_override,
+            'updatedAt': self.updated_at,
         }
 
     @classmethod
@@ -93,6 +103,10 @@ class InstanceModel(ORMBase):
     @classmethod
     def find_by_pcf_guid(cls, pcf_guid: str, database: Session):
         return database.query(cls).filter_by(pcf_guid=pcf_guid).first()
+
+    @classmethod
+    def find_by_org_id_list(cls, org_ids: List[str], database: Session):
+        return database.query(cls).filter(cls.pcf_org_id.in_(org_ids)).all()
 
     @classmethod
     def find_all(cls, database: Session):
