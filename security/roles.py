@@ -3,6 +3,7 @@
 from typing import List, Optional
 
 from constants.auth_constants import role_lookup
+from mocks.fake_pcf_api import role_to_org_id
 
 
 class RoleValidateResult:
@@ -20,3 +21,12 @@ def validate_role_list(roles: List[str]):
         if role not in role_lookup:
             fail_list.append(role)
     return RoleValidateResult(fail_list)
+
+
+def get_org_ids_for_user(roles: List[str]):
+    """Maps a users roles to the PCF Organisations they have access to."""
+    org_ids = []
+    for role in roles:
+        if role in role_to_org_id:
+            org_ids.append(role_to_org_id[role])
+    return org_ids
