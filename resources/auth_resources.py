@@ -66,7 +66,7 @@ def create_user(
         database.commit()
         database.flush()
 
-        access_token, refresh_token = create_auth_tokens(retrieved_user)
+        access_token, refresh_token = create_auth_tokens(created_user)
 
         return respond_ok(
             response,
