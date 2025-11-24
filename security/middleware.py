@@ -45,7 +45,7 @@ def protected_endpoint(for_areas: Optional[List[str]] = None):
                 for role in token['roles']:
                     if role in role_lookup:
                         if for_areas:
-                            access_group = role_lookup[role]
+                            access_group = role_lookup[role]['access_codes']
                             for required_area in for_areas:
                                 if required_area in access_group:
                                     access_granted = True
