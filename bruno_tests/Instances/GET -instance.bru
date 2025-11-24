@@ -14,6 +14,23 @@ auth:bearer {
   token: {{accessToken}}
 }
 
+script:post-response {
+  const targetId = 'a56ea34d-f79c-463f-95f4-ef779105af68' // whatif-core
+  
+  const whatIf = res.body.instances.find((instance) => {
+    return instance.pcfGuid === targetId;
+  });
+  
+  if (whatIf) {
+    bru.setEnvVar('whatif-app-id', whatIf.instanceId);
+    bru.setEnvVar('whatif-pcf-id', whatIf.pcfGuid);
+  } else {
+    bru.setEnvVar('whatif-app-id', 'no-id-supplied');  
+    bru.setEnvVar('whatif-pcf-id', 'no-id-supplied');
+  }
+  
+}
+
 settings {
   encodeUrl: true
   timeout: 0
