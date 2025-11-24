@@ -18,7 +18,12 @@ from mocks.fake_pcf_api import fake_pcf_call, spaces_by_id
 from security.middleware import protected_endpoint
 from security.roles import get_org_ids_for_user
 
-from utils.responses import respond_not_found, respond_ok, respond_server_error
+from utils.responses import (
+    respond_not_found,
+    respond_ok,
+    respond_server_error,
+    respond_unauthorised,
+)
 
 router = APIRouter(prefix='/instance')
 
@@ -46,7 +51,7 @@ async def get_all_instances(
 
 @router.get('/debug')
 @protected_endpoint()
-async def get_pcf_call(
+async def debug_get_pcf_call(
     request: Request,
     response: Response,
     database: Session = Depends(get_db),
@@ -98,11 +103,18 @@ async def get_single_instance_by_id(
     """Retrieves a specific instance by ID. Note that this is the app's internal ID not the PCF GUD."""
 
     try:
+        org_ids = get_org_ids_for_user(roles)
         instance = InstanceModel.find_by_app_id(instance_id, database)
 
         if not instance:
             return respond_not_found(
                 response, error=f'No instance found for ID "{instance_id}".'
+            )
+
+        if instance['guid'] not in org_ids:
+            return respond_unauthorised(
+                response,
+                f'You do not have the required roles to access the instance with ID "{instance_id}".',
             )
 
         return respond_ok(response, instance=instance.to_json())
@@ -123,11 +135,18 @@ async def get_single_instance_by_pcf_guid(
     """Retrieves a specific instance by ID. Note that this is the PCF GUD the app's internal ID."""
 
     try:
+        org_ids = get_org_ids_for_user(roles)
         instance = InstanceModel.find_by_pcf_guid(instance_id, database)
 
         if not instance:
             return respond_not_found(
                 response, error=f'No instance found for PCF ID "{instance_id}".'
+            )
+
+        if instance['guid'] not in org_ids:
+            return respond_unauthorised(
+                response,
+                f'You do not have the required roles to access the instance with ID "{instance_id}".',
             )
 
         return respond_ok(response, instance=instance.to_json())
@@ -180,7 +199,8 @@ async def syc_and_create_instances(
 
         database.commit()
         return respond_ok(
-            response, message='Instance list created and synced with PCF.',
+            response,
+            message='Instance list created and synced with PCF.',
             updated=datetime.now(timezone),
         )
     except Exception as ex:
