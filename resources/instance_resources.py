@@ -1,9 +1,20 @@
-"""Handles all responses on the base endpoint "/"."""
+"""Handles all responses on the base endpoint "/instance"."""
 
-from typing import List
+from jwt import ExpiredSignatureError, InvalidTokenError
 from datetime import datetime
+from typing import Annotated, List
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import (
+    APIRouter,
+    Depends,
+    Request,
+    Response,
+    status,
+    WebSocket,
+    WebSocketDisconnect,
+    WebSocketException,
+)
+from loguru import logger
 from sqlalchemy.orm import Session
 
 from config.database import get_db
@@ -15,15 +26,17 @@ from models.instance_model import InstanceModel
 
 from mocks.fake_pcf_api import fake_pcf_call, spaces_by_id
 
-from security.middleware import protected_endpoint
+from security.middleware import get_ws_token, protected_endpoint, verify_extracted_token
 from security.roles import get_org_ids_for_user
 
+from utils.exceptions import NeedsAuthorisation, NeedsLogin
 from utils.responses import (
     respond_not_found,
     respond_ok,
     respond_server_error,
     respond_unauthorised,
 )
+from utils.ws_manager import ws_manager
 
 router = APIRouter(prefix='/instance')
 
@@ -127,48 +140,17 @@ async def get_single_instance_by_pcf_guid(
 
 @router.post('/')
 @protected_endpoint(for_areas=[auth_areas.ADMIN])
-async def syc_and_create_instances(
+async def user_sync_instances(
     request: Request,
     response: Response,
     database: Session = Depends(get_db),
     racfid: str = Depends(lambda: None),
     roles: List[str] = Depends(lambda: None),
 ):
-    """Checks all PCF spaces to create or delete instances based on the current makeup of PCF."""
+    """Endpoint to manually trigger PCF Instance syncs."""
 
     try:
-        for pcf_org in fake_pcf_call:
-            for pcf_instance in pcf_org['instances']:
-                queried_app_instance = InstanceModel.find_by_pcf_guid(
-                    pcf_instance['guid'], database
-                )
-                if queried_app_instance:
-                    queried_app_instance.created_at = pcf_instance['created_at']
-                    queried_app_instance.pcf_app_name = pcf_instance['name']
-                    queried_app_instance.pcf_cpu = 0
-                    queried_app_instance.pcf_org_id = pcf_org['org_id']
-                    queried_app_instance.pcf_space_id = pcf_instance['space_id']
-                    queried_app_instance.pcf_instances_total = 1
-                    queried_app_instance.pcf_ram = 1
-                    queried_app_instance.readable_name = pcf_instance['name']
-                    queried_app_instance.updated_at = pcf_instance['updated_at']
-                else:
-                    queried_app_instance = InstanceModel(
-                        created_at=pcf_instance['created_at'],
-                        pcf_app_name=pcf_instance['name'],
-                        pcf_cpu=0,
-                        pcf_guid=pcf_instance['guid'],
-                        pcf_org_id=pcf_org['org_id'],
-                        pcf_space_id=pcf_instance['space_id'],
-                        pcf_instances_total=1,
-                        pcf_ram=1,
-                        readable_name=pcf_instance['name'],
-                        status=pcf_instance['desired_state'],
-                        updated_at=pcf_instance['updated_at'],
-                    )
-                    database.add(queried_app_instance)
-
-        database.commit()
+        await syc_and_create_instances(database=database)
         return respond_ok(
             response,
             message='Instance list created and synced with PCF.',
@@ -217,3 +199,92 @@ async def debug_get_pcf_call(
         )
     except Exception as ex:
         return respond_server_error(response, error=str(ex))
+
+
+async def syc_and_create_instances(
+    database: Session = Depends(get_db),
+):
+    """Checks all PCF spaces to create or delete application Instances, based on the current makeup of PCF."""
+
+    try:
+        for pcf_org in fake_pcf_call:
+            for pcf_instance in pcf_org['instances']:
+                queried_app_instance = InstanceModel.find_by_pcf_guid(
+                    pcf_instance['guid'], database
+                )
+                if queried_app_instance:
+                    queried_app_instance.created_at = pcf_instance['created_at']
+                    queried_app_instance.pcf_app_name = pcf_instance['name']
+                    queried_app_instance.pcf_cpu = 0
+                    queried_app_instance.pcf_org_id = pcf_org['org_id']
+                    queried_app_instance.pcf_space_id = pcf_instance['space_id']
+                    queried_app_instance.pcf_instances_total = 1
+                    queried_app_instance.pcf_ram = 1
+                    queried_app_instance.readable_name = pcf_instance['name']
+                    queried_app_instance.updated_at = pcf_instance['updated_at']
+                else:
+                    queried_app_instance = InstanceModel(
+                        created_at=pcf_instance['created_at'],
+                        pcf_app_name=pcf_instance['name'],
+                        pcf_cpu=0,
+                        pcf_guid=pcf_instance['guid'],
+                        pcf_org_id=pcf_org['org_id'],
+                        pcf_space_id=pcf_instance['space_id'],
+                        pcf_instances_total=1,
+                        pcf_ram=1,
+                        readable_name=pcf_instance['name'],
+                        status=pcf_instance['desired_state'],
+                        updated_at=pcf_instance['updated_at'],
+                    )
+                    database.add(queried_app_instance)
+                await ws_manager.broadcast_update(queried_app_instance)
+
+        database.commit()
+        return {'message': 'Sync completed successfully'}
+    except Exception as ex:
+        raise ex
+
+
+@router.websocket('/ws')
+async def websocket_endpoint(
+    *,
+    websocket: WebSocket,
+    token: Annotated[str, Depends(get_ws_token)],
+    database: Session = Depends(get_db),
+):
+    try:
+        decoded_verified_token = verify_extracted_token(token)
+        org_ids = get_org_ids_for_user(decoded_verified_token['roles'])
+        instances = InstanceModel.find_by_org_id_list(org_ids, database)
+
+        for instance in instances:
+            ws_manager.register_listener(instance.pcf_guid, websocket)
+        try:
+            await websocket.accept()
+            while True:
+                data = await websocket.receive_text()
+                await ws_manager.send_personal_message(f'You wrote {data}', websocket)
+        except WebSocketDisconnect:
+            ws_manager.unregister_listener(websocket)
+    except NeedsLogin:
+        raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
+    except NeedsAuthorisation:
+        raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
+    except ExpiredSignatureError:
+        raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
+    except InvalidTokenError:
+        raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
+    except ValueError:
+        raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
+
+
+async def schedule_instance_sync():
+    """Scheduler task to sync the Instances database."""
+    try:
+        logger.info('Beginning schedule of Instances from PCF')
+        database = next(get_db())
+        result = await syc_and_create_instances(database=database)
+        logger.info('PCF sync job complete.')
+        return result
+    except Exception as ex:
+        logger.error(str(ex))

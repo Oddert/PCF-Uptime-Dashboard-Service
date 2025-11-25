@@ -1,4 +1,5 @@
 alembic
+apscheduler
 bcrypt
 fastapi
 loguru
@@ -9,3 +10,4 @@ pytz
 ruff
 sqlalchemy
 uvicorn
+websockets
