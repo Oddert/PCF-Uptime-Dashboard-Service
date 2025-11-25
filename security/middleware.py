@@ -1,7 +1,14 @@
 from functools import wraps
-from typing import List, Optional
+from typing import Annotated, List, Optional
 
-from fastapi import Request, Response
+from fastapi import (
+    Query,
+    Request,
+    Response,
+    status,
+    WebSocket,
+    WebSocketException,
+)
 
 from constants.auth_constants import role_lookup
 
@@ -15,6 +22,40 @@ from utils.responses import (
 )
 
 
+def verify_extracted_token(access_token: str, for_areas: Optional[List[str]] = None):
+    """Performs the bulk of the logic required to decode and verify an incoming access token."""
+    token_verify_result = validate_access_jwt(access_token)
+
+    if not token_verify_result.success:
+        raise NeedsLogin(
+            token_verify_result.error
+            if token_verify_result.error
+            else 'Token decode failed.'
+        )
+
+    decoded_verified_token = token_verify_result.payload
+
+    if 'roles' not in decoded_verified_token:
+        raise NeedsLogin('Token format invalid.')
+
+    access_granted = False
+
+    for role in decoded_verified_token['roles']:
+        if role in role_lookup:
+            if for_areas:
+                access_group = role_lookup[role]['access_codes']
+                for required_area in for_areas:
+                    if required_area in access_group:
+                        access_granted = True
+            else:
+                access_granted = True
+
+    if not access_granted:
+        raise NeedsAuthorisation('Insufficient roles for requested resource.')
+
+    return decoded_verified_token
+
+
 def protected_endpoint(for_areas: Optional[List[str]] = None):
     """
     Middleware to protect resources from access by unauthenticated of unauthorised users.
@@ -26,39 +67,11 @@ def protected_endpoint(for_areas: Optional[List[str]] = None):
         async def decorated(request: Request, response: Response, *args, **kwargs):
             try:
                 access_token = extract_access_token(request)
-                token_verify_result = validate_access_jwt(access_token)
 
-                if not token_verify_result.success:
-                    raise NeedsLogin(
-                        token_verify_result.error
-                        if token_verify_result.error
-                        else 'Token decode failed.'
-                    )
+                decoded_verified_token = verify_extracted_token(access_token, for_areas)
 
-                token = token_verify_result.payload
-
-                if 'roles' not in token:
-                    raise NeedsLogin('Token format invalid.')
-
-                access_granted = False
-
-                for role in token['roles']:
-                    if role in role_lookup:
-                        if for_areas:
-                            access_group = role_lookup[role]['access_codes']
-                            for required_area in for_areas:
-                                if required_area in access_group:
-                                    access_granted = True
-                        else:
-                            access_granted = True
-
-                if not access_granted:
-                    raise NeedsAuthorisation(
-                        'Insufficient roles for requested resource.'
-                    )
-
-                kwargs['racfid'] = token['sub']
-                kwargs['roles'] = token['roles']
+                kwargs['racfid'] = decoded_verified_token['sub']
+                kwargs['roles'] = decoded_verified_token['roles']
 
                 return await func(request=request, response=response, *args, **kwargs)
 
@@ -87,3 +100,13 @@ def extract_access_token(request: Request) -> str:
     if not auth.lower().startswith('bearer ') or len(auth_segments) != 2:
         raise NeedsLogin('Header "Authorization" was not a valid Bearer token.')
     return auth_segments[1]
+
+
+async def get_ws_token(
+    websocket: WebSocket,
+    token: Annotated[str | None, Query()] = None,
+):
+    """Dependency function to extract an auth token from a websocket connector."""
+    if token is None:
+        raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
+    return token
