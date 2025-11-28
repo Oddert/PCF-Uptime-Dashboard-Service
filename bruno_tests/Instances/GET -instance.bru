@@ -17,9 +17,9 @@ auth:bearer {
 script:post-response {
   const targetId = 'a56ea34d-f79c-463f-95f4-ef779105af68' // whatif-core
   
-  const whatIf = res.body.instances.find((instance) => {
+  const whatIf = res.body?.instances?.find((instance) => {
     return instance.pcfGuid === targetId;
-  });
+  }) ?? null;
   
   if (whatIf) {
     bru.setEnvVar('whatif-app-id', whatIf.instanceId);
