@@ -1,4 +1,5 @@
 from datetime import datetime
+from time import mktime
 from typing import List
 
 from sqlalchemy.dialects.postgresql import BYTEA, DOUBLE_PRECISION
@@ -77,7 +78,7 @@ class InstanceModel(ORMBase):
     def to_json(self):
         return {
             'contactInfo': self.contact_info,
-            'createdAt': self.created_at,
+            'createdAt': mktime(self.created_at.timetuple()),
             'instanceId': self.instance_id.hex(),
             'message': self.message,
             'pcfAppName': self.pcf_app_name,
@@ -90,7 +91,7 @@ class InstanceModel(ORMBase):
             'readableName': self.readable_name,
             'status': self.status,
             'tickOverride': self.tick_override,
-            'updatedAt': self.updated_at,
+            'updatedAt': mktime(self.updated_at.timetuple()),
         }
 
     @classmethod
