@@ -4,6 +4,7 @@ from fastapi import WebSocket
 
 from models.instance_model import InstanceModel
 
+
 class WSManager:
     def __init__(self) -> None:
         self.instances: Dict[str, List[WebSocket]] = {}

@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Mapped, mapped_column, Session
 from sqlalchemy.dialects.oracle import DATE, NVARCHAR2
-from sqlalchemy.types import  TEXT
+from sqlalchemy.types import TEXT
 
 from config.database import ORMBase
 
@@ -16,7 +16,8 @@ class TokenExcludeModel(ORMBase):
     __tablename__ = 'PDB_TOKEN_EXCLUDE'
 
     expires: Mapped[datetime] = mapped_column(
-        DATE, nullable=False,
+        DATE,
+        nullable=False,
     )
     jti: Mapped[str] = mapped_column(
         NVARCHAR2(36).with_variant(TEXT, 'sqlite', 'postgresql'),

@@ -18,6 +18,7 @@ class PostLogin(BaseModel):
         max_length=50,
     )
 
+
 class PostSignup(PostLogin):
     readableName: str | None = Field(
         None,
@@ -31,6 +32,7 @@ class PostSignup(PostLogin):
         title='Auth areas',
         description="Auth areas the user is allowed access to. NOTE: This is unrestriced as this is a prototype and so the user's should be treated as test-users.",
     )
+
 
 class PostTokenRefresh(BaseModel):
     refreshToken: str = Field(

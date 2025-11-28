@@ -20,6 +20,7 @@ def respond_ok(
         **kwargs,
     }
 
+
 def respond_bad_request(
     response: Response | None = None,
     message: str = 'The system was unable to process your request.',
@@ -36,6 +37,7 @@ def respond_bad_request(
         'error': error,
         **kwargs,
     }
+
 
 def respond_unauthenticated(
     response: Response | None = None,
@@ -54,6 +56,7 @@ def respond_unauthenticated(
         **kwargs,
     }
 
+
 def respond_unauthorised(
     response: Response | None = None,
     message: str = 'You do not have sufficient privileges to access this resource.',
@@ -71,6 +74,7 @@ def respond_unauthorised(
         **kwargs,
     }
 
+
 def respond_not_found(
     response: Response | None = None,
     message: str = 'The requested resource could not be found. Please check the request and try again.',
@@ -87,6 +91,7 @@ def respond_not_found(
         'error': error,
         **kwargs,
     }
+
 
 def respond_server_error(
     response: Response | None = None,
