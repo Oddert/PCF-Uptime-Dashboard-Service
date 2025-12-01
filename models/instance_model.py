@@ -78,7 +78,9 @@ class InstanceModel(ORMBase):
     def to_json(self):
         return {
             'contactInfo': self.contact_info,
-            'createdAt': mktime(self.created_at.timetuple()) if self.created_at else None,
+            'createdAt': mktime(self.created_at.timetuple())
+            if self.created_at
+            else None,
             'instanceId': self.instance_id.hex(),
             'message': self.message,
             'pcfAppName': self.pcf_app_name,
@@ -91,7 +93,9 @@ class InstanceModel(ORMBase):
             'readableName': self.readable_name,
             'status': self.status,
             'tickOverride': self.tick_override,
-            'updatedAt': mktime(self.updated_at.timetuple()) if self.updated_at else None,
+            'updatedAt': mktime(self.updated_at.timetuple())
+            if self.updated_at
+            else None,
         }
 
     @classmethod
