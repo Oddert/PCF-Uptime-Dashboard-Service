@@ -24,6 +24,7 @@ class WSManager:
         await websocket.send_text(message)
 
     async def broadcast_update(self, instance: InstanceModel):
+        print('broadcasting: ', instance.pcf_app_name)
         pcf_guid = instance.pcf_guid
         if pcf_guid in self.instances:
             for listener in self.instances[pcf_guid]:
