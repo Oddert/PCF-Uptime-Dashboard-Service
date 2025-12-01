@@ -16,10 +16,10 @@ auth_areas = Areas()
 
 
 role_lookup = {
-    'PBD_User': {'access_codes': []},
+    'PDB_User': {'access_codes': []},
     'PBD_Stakeholder': {'access_codes': [auth_areas.STAKEHOLDER]},
     'PBD_Product_owner': {'access_codes': [auth_areas.STAKEHOLDER, auth_areas.PO]},
-    'PBD_Admin': {
+    'PDB_Admin': {
         'access_codes': [auth_areas.STAKEHOLDER, auth_areas.PO, auth_areas.ADMIN]
     },
 }
