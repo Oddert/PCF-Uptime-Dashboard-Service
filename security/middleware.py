@@ -9,6 +9,8 @@ from fastapi import (
     WebSocket,
     WebSocketException,
 )
+from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 from constants.auth_constants import role_lookup
 
@@ -66,6 +68,7 @@ def protected_endpoint(for_areas: Optional[List[str]] = None):
         @wraps(func)
         async def decorated(request: Request, response: Response, *args, **kwargs):
             try:
+                print(request.url)
                 access_token = extract_access_token(request)
 
                 decoded_verified_token = verify_extracted_token(access_token, for_areas)
@@ -110,3 +113,40 @@ async def get_ws_token(
     if token is None:
         raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
     return token
+
+
+class CustomCorsMW(BaseHTTPMiddleware):
+    '''Customised middleware to handle CORs. Allows us to inject specific Access Control headers to deal with rules which disallow "*"'''
+
+    def __init__(self, app) -> None:
+        super().__init__(app)
+
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
+        origin = request.headers.get('origin')
+
+        if (
+            request.method == 'OPTIONS'
+            and 'access-control-request-method' in request.headers
+        ):
+            allow_headers = 'Authorization,Content-Type,Accept,Origin,X-Requested-With'
+            headers = {
+                'Access-Control-Allow-Origin': origin or '*',
+                'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,PATCH,OPTIONS',
+                'Access-Control-Allow-Headers': allow_headers,
+                'Access-Control-Allow-Credentials': 'true',
+            }
+            return JSONResponse(
+                content={'detail': 'CORS pre-flight successful'}, headers=headers
+            )
+
+        response = await call_next(request)
+
+        if origin is None:
+            return response
+
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+
+        return response
