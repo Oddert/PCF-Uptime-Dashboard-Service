@@ -1,18 +1,13 @@
 """Handles all responses on the base endpoint "/instance"."""
 
-from jwt import ExpiredSignatureError, InvalidTokenError
 from datetime import datetime
-from typing import Annotated, List
+from typing import List
 
 from fastapi import (
     APIRouter,
     Depends,
     Request,
     Response,
-    status,
-    WebSocket,
-    WebSocketDisconnect,
-    WebSocketException,
 )
 from loguru import logger
 from sqlalchemy.orm import Session
@@ -26,10 +21,9 @@ from models.instance_model import InstanceModel
 
 from mocks.fake_pcf_api import fake_pcf_call, spaces_by_id
 
-from security.middleware import get_ws_token, protected_endpoint, verify_extracted_token
+from security.middleware import protected_endpoint
 from security.roles import get_org_ids_for_user
 
-from utils.exceptions import NeedsAuthorisation, NeedsLogin
 from utils.responses import (
     respond_not_found,
     respond_ok,
@@ -243,39 +237,6 @@ async def syc_and_create_instances(
         return {'message': 'Sync completed successfully'}
     except Exception as ex:
         raise ex
-
-
-@router.websocket('/ws')
-async def websocket_endpoint(
-    *,
-    websocket: WebSocket,
-    token: Annotated[str, Depends(get_ws_token)],
-    database: Session = Depends(get_db),
-):
-    try:
-        decoded_verified_token = verify_extracted_token(token)
-        org_ids = get_org_ids_for_user(decoded_verified_token['roles'])
-        instances = InstanceModel.find_by_org_id_list(org_ids, database)
-
-        for instance in instances:
-            ws_manager.register_listener(instance.pcf_guid, websocket)
-        try:
-            await websocket.accept()
-            while True:
-                data = await websocket.receive_text()
-                await ws_manager.send_personal_message(f'You wrote {data}', websocket)
-        except WebSocketDisconnect:
-            ws_manager.unregister_listener(websocket)
-    except NeedsLogin:
-        raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
-    except NeedsAuthorisation:
-        raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
-    except ExpiredSignatureError:
-        raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
-    except InvalidTokenError:
-        raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
-    except ValueError:
-        raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
 
 
 async def schedule_instance_sync():

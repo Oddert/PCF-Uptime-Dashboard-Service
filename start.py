@@ -3,11 +3,12 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 from uvicorn import run
 
 from resources import auth_resources, instance_resources, root_resources
+
+from security.middleware import CustomCorsMW
 
 from utils.schedulers import setup_async_schedulers
 
@@ -31,17 +32,13 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 allowed_origins = [
-    'http://localhost:8080',
+    'http://localhost:8081',
     'http://localhost:5173',
+    'ws://localhost:5173',
 ]
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=True,
-    allow_methods=['*'],
-    allow_headers=['*'],
-)
+
+app.add_middleware(CustomCorsMW)
 
 routes = [
     (auth_resources.router, 'Auth'),
@@ -53,10 +50,9 @@ for route, tags in routes:
     logger.info(f'Initialising route: {tags}')
     app.include_router(route, prefix='/api/v0', tags=[tags])
 
-
 if __name__ == '__main__':
     run(
         'start:app',
-        port=8080,
+        port=8081,
         reload=True,
     )
