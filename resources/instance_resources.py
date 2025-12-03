@@ -49,8 +49,7 @@ async def get_all_instances(
     try:
         org_ids = get_org_ids_for_user(roles)
         instances = InstanceModel.find_by_org_id_list(org_ids, database)
-        for instance in instances:
-            await ws_manager.broadcast_update(instance)
+        await ws_manager.broadcast_multiple_updates(instances)
         return respond_ok(
             response, instances=[instance.to_json() for instance in instances]
         )

@@ -28,7 +28,22 @@ class WSManager:
         pcf_guid = instance.pcf_guid
         if pcf_guid in self.instances:
             for listener in self.instances[pcf_guid]:
-                await listener.send_json(instance.to_json())
+                await listener.send_json([instance.to_json()])
+
+    async def broadcast_multiple_updates(self, instances: List[InstanceModel]):
+        listeners: Dict[WebSocket, List[InstanceModel]] = {}
+        for instance in instances:
+            print('broadcasting multiple: ', instance.pcf_app_name)
+            pcf_guid = instance.pcf_guid
+            if pcf_guid in self.instances:
+                for listener in self.instances[pcf_guid]:
+                    if listener not in listeners:
+                        listeners[listener] = []
+                    listeners[listener].append(instance)
+
+        print('listeners', listeners)
+        for recipient, subscriptions in listeners.items():
+            await recipient.send_json([instance.to_json() for instance in subscriptions])
 
 
 ws_manager = WSManager()
