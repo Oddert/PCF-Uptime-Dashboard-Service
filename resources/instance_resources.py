@@ -30,6 +30,7 @@ from utils.responses import (
     respond_server_error,
     respond_unauthorised,
 )
+from utils.sync_manager import sync_manager
 from utils.ws_manager import ws_manager
 
 router = APIRouter(prefix='/instance')
@@ -47,6 +48,10 @@ async def get_all_instances(
     """Retrieves a list of all instances stored within the system."""
 
     try:
+        if sync_manager.should_update():
+            await syc_and_create_instances(database)
+            sync_manager.log_update()
+
         org_ids = get_org_ids_for_user(roles)
         instances = InstanceModel.find_by_org_id_list(org_ids, database)
         await ws_manager.broadcast_multiple_updates(instances)
@@ -201,43 +206,43 @@ async def syc_and_create_instances(
 ):
     """Checks all PCF spaces to create or delete application Instances, based on the current makeup of PCF."""
 
-    try:
-        for pcf_org in fake_pcf_call:
-            for pcf_instance in pcf_org['instances']:
-                queried_app_instance = InstanceModel.find_by_pcf_guid(
-                    pcf_instance['guid'], database
+    # try:
+    for pcf_org in fake_pcf_call:
+        for pcf_instance in pcf_org['instances']:
+            queried_app_instance = InstanceModel.find_by_pcf_guid(
+                pcf_instance['guid'], database
+            )
+            if queried_app_instance:
+                queried_app_instance.created_at = pcf_instance['created_at']
+                queried_app_instance.pcf_app_name = pcf_instance['name']
+                queried_app_instance.pcf_cpu = 0
+                queried_app_instance.pcf_org_id = pcf_org['org_id']
+                queried_app_instance.pcf_space_id = pcf_instance['space_id']
+                queried_app_instance.pcf_instances_total = 1
+                queried_app_instance.pcf_ram = 1
+                queried_app_instance.readable_name = pcf_instance['name']
+                queried_app_instance.updated_at = pcf_instance['updated_at']
+            else:
+                queried_app_instance = InstanceModel(
+                    created_at=pcf_instance['created_at'],
+                    pcf_app_name=pcf_instance['name'],
+                    pcf_cpu=0,
+                    pcf_guid=pcf_instance['guid'],
+                    pcf_org_id=pcf_org['org_id'],
+                    pcf_space_id=pcf_instance['space_id'],
+                    pcf_instances_total=1,
+                    pcf_ram=1,
+                    readable_name=pcf_instance['name'],
+                    status=pcf_instance['desired_state'],
+                    updated_at=pcf_instance['updated_at'],
                 )
-                if queried_app_instance:
-                    queried_app_instance.created_at = pcf_instance['created_at']
-                    queried_app_instance.pcf_app_name = pcf_instance['name']
-                    queried_app_instance.pcf_cpu = 0
-                    queried_app_instance.pcf_org_id = pcf_org['org_id']
-                    queried_app_instance.pcf_space_id = pcf_instance['space_id']
-                    queried_app_instance.pcf_instances_total = 1
-                    queried_app_instance.pcf_ram = 1
-                    queried_app_instance.readable_name = pcf_instance['name']
-                    queried_app_instance.updated_at = pcf_instance['updated_at']
-                else:
-                    queried_app_instance = InstanceModel(
-                        created_at=pcf_instance['created_at'],
-                        pcf_app_name=pcf_instance['name'],
-                        pcf_cpu=0,
-                        pcf_guid=pcf_instance['guid'],
-                        pcf_org_id=pcf_org['org_id'],
-                        pcf_space_id=pcf_instance['space_id'],
-                        pcf_instances_total=1,
-                        pcf_ram=1,
-                        readable_name=pcf_instance['name'],
-                        status=pcf_instance['desired_state'],
-                        updated_at=pcf_instance['updated_at'],
-                    )
-                    database.add(queried_app_instance)
-                await ws_manager.broadcast_update(queried_app_instance)
+                database.add(queried_app_instance)
+            await ws_manager.broadcast_update(queried_app_instance)
 
-        database.commit()
-        return {'message': 'Sync completed successfully'}
-    except Exception as ex:
-        raise ex
+    database.commit()
+    return {'message': 'Sync completed successfully'}
+    # except Exception as ex:
+    #     raise ex
 
 
 async def schedule_instance_sync():

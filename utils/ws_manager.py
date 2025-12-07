@@ -39,6 +39,7 @@ class WSManager:
                 for listener in self.instances[pcf_guid]:
                     if listener not in listeners:
                         listeners[listener] = []
+                    print(f'subscribing {listener} to {instance}')
                     listeners[listener].append(instance)
 
         print('listeners', listeners)
