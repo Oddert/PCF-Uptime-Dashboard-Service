@@ -86,13 +86,14 @@ async def create_single_watchlist(
     try:
         created_watchlist = WatchlistModel(
             description=watchlist.description,
+            racf=racfid,
             title=watchlist.title,
         )
         database.add(created_watchlist)
 
         org_ids = get_org_ids_for_user(roles)
 
-        for instance_id in watchlist.instanceIds:
+        for instance_id in watchlist.instances:
             instance = InstanceModel.find_by_pcf_guid_and_org(
                 instance_id, org_ids, database
             )
@@ -139,6 +140,7 @@ async def get_watchlist_by_id(
                 response, 'You are not the owner of this Watchlist'
             )
 
+
         return respond_ok(
             response,
             watchlist=retrieved_watchlist.to_json(),
@@ -177,7 +179,7 @@ async def update_watchlist(
 
         org_ids = get_org_ids_for_user(roles)
 
-        for instance_id in watchlist.instanceIds:
+        for instance_id in watchlist.instances:
             instance = InstanceModel.find_by_pcf_guid_and_org(
                 instance_id, org_ids, database
             )
