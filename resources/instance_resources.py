@@ -19,7 +19,7 @@ from constants.auth_constants import auth_areas
 
 from models.instance_model import InstanceModel
 
-from mocks.fake_pcf_api import fake_pcf_call, spaces_by_id
+from mocks.fake_pcf_api import fake_pcf_call, org_names, spaces_by_id
 
 from security.middleware import protected_endpoint
 from security.roles import get_org_ids_for_user
@@ -58,6 +58,22 @@ async def get_all_instances(
         return respond_ok(
             response, instances=[instance.to_json() for instance in instances]
         )
+    except Exception as ex:
+        return respond_server_error(response, error=str(ex))
+
+@router.get('/org-names')
+@protected_endpoint()
+async def get_space_mapping(
+    request: Request,
+    response: Response,
+    database: Session = Depends(get_db),
+    racfid: str = Depends(lambda: None),
+    roles: List[str] = Depends(lambda: None),
+):
+    """Sends the mapping of all PCF organisations from ID to name."""
+
+    try:
+        return respond_ok(response, orgNames=org_names)
     except Exception as ex:
         return respond_server_error(response, error=str(ex))
 
@@ -221,6 +237,7 @@ async def syc_and_create_instances(
                 queried_app_instance.pcf_instances_total = 1
                 queried_app_instance.pcf_ram = 1
                 queried_app_instance.readable_name = pcf_instance['name']
+                queried_app_instance.status = pcf_instance['desired_state']
                 queried_app_instance.updated_at = pcf_instance['updated_at']
             else:
                 queried_app_instance = InstanceModel(
