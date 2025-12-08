@@ -49,6 +49,7 @@ async def get_all_watchlists(
     except Exception as ex:
         return respond_server_error(response, error=str(ex))
 
+
 @router.get('/default')
 @protected_endpoint()
 async def get_default_watchlists(
@@ -63,7 +64,8 @@ async def get_default_watchlists(
     try:
         watchlist = WatchlistModel.get_users_default(racfid, database)
         return respond_ok(
-            response, watchlist=watchlist.to_json() if watchlist else None,
+            response,
+            watchlist=watchlist.to_json() if watchlist else None,
         )
     except Exception as ex:
         return respond_server_error(response, error=str(ex))
@@ -96,7 +98,7 @@ async def create_single_watchlist(
             )
             if instance:
                 created_watchlist.instances.append(instance)
-        
+
         if watchlist.is_default:
             WatchlistModel.remove_default_flag(racfid, database)
             created_watchlist.is_default = True

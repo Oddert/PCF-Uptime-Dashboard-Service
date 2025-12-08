@@ -61,6 +61,7 @@ async def get_all_instances(
     except Exception as ex:
         return respond_server_error(response, error=str(ex))
 
+
 @router.get('/org-names')
 @protected_endpoint()
 async def get_space_mapping(

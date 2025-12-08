@@ -9,13 +9,14 @@ class WSManager:
     """
     Used to manage collections of WebSocket connections for Instances.
     """
+
     def __init__(self) -> None:
         self.instances: Dict[str, List[WebSocket]] = {}
 
     def register_listener(self, pcf_guid: str, websocket: WebSocket):
         """
         Adds a WebSocket connection for a given PCF instance.
-        
+
         :param pcf_guid: The PCF ID for the Instance this connection is subscribing to.
         :type pcf_guid: str
         :param websocket: The WebSocket connection to subscribe.
@@ -29,7 +30,7 @@ class WSManager:
     def unregister_listener(self, websocket: WebSocket):
         """
         Un-subscribes a WebSocket connection from all its subscriptions on disconnect.
-        
+
         :param websocket: The WebSocket connection to remove from all Instances it is subscribed to.
         :type websocket: WebSocket
         """
@@ -40,7 +41,7 @@ class WSManager:
     async def broadcast_update(self, instance: InstanceModel):
         """
         Sends an Instance update to all subscribed parties.
-        
+
         :param instance: The Instance to be broadcast.
         :type instance: InstanceModel
         """
@@ -52,7 +53,7 @@ class WSManager:
     async def broadcast_multiple_updates(self, instances: List[InstanceModel]):
         """
         Sends an update to all subscribed parties for a list of Instances.
-        
+
         :param instances: The list of Instances to broadcast.
         :type instances: List[InstanceModel]
         """
@@ -66,7 +67,9 @@ class WSManager:
                     listeners[listener].append(instance)
 
         for recipient, subscriptions in listeners.items():
-            await recipient.send_json([instance.to_json() for instance in subscriptions])
+            await recipient.send_json(
+                [instance.to_json() for instance in subscriptions]
+            )
 
 
 ws_manager = WSManager()
