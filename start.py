@@ -21,10 +21,15 @@ from config.database import get_db
 
 from models.instance_model import InstanceModel
 
-from resources import auth_resources, instance_resources, root_resources
+from resources import (
+    auth_resources,
+    instance_resources,
+    root_resources,
+    watchlist_resources,
+)
 
 from security.middleware import CustomCorsMW, get_ws_token, verify_extracted_token
-from starlette.responses import FileResponse 
+from starlette.responses import FileResponse
 from security.roles import get_org_ids_for_user
 
 from utils.exceptions import NeedsAuthorisation, NeedsLogin
@@ -50,9 +55,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+
 @app.get('/voice')
 def get_voice():
-    return FileResponse('voice.html') 
+    return FileResponse('voice.html')
+
 
 allowed_origins = [
     'http://localhost:8081',
@@ -67,6 +74,7 @@ routes = [
     (auth_resources.router, 'Auth'),
     (instance_resources.router, 'Instances'),
     (root_resources.router, 'Root'),
+    (watchlist_resources.router, 'Watchlist'),
 ]
 
 for route, tags in routes:

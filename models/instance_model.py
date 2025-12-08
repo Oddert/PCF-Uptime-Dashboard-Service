@@ -100,6 +100,7 @@ class InstanceModel(ORMBase):
 
     @classmethod
     def find_by_app_id(cls, instance_id: str, database: Session):
+        """Queries a single Instance by the application ID."""
         return (
             database.query(cls)
             .filter_by(instance_id=bytes.fromhex(instance_id))
@@ -108,12 +109,20 @@ class InstanceModel(ORMBase):
 
     @classmethod
     def find_by_pcf_guid(cls, pcf_guid: str, database: Session):
+        """Queries a single Instance by the PCF ID."""
         return database.query(cls).filter_by(pcf_guid=pcf_guid).first()
 
     @classmethod
+    def find_by_pcf_guid_and_org(cls, pcf_guid: str, org_ids: List[str], database: Session):
+        """Queries an instance by PCF ID but only if the organisation ID is in the permitted list."""
+        return database.query(cls).filter_by(pcf_guid=pcf_guid).filter(cls.pcf_org_id.in_(org_ids)).first()
+
+    @classmethod
     def find_by_org_id_list(cls, org_ids: List[str], database: Session):
+        """Queries all instances belonging to a given organisation ID."""
         return database.query(cls).filter(cls.pcf_org_id.in_(org_ids)).all()
 
     @classmethod
     def find_all(cls, database: Session):
+        """Queries all instances held by the system."""
         return database.query(cls).all()
