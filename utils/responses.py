@@ -21,6 +21,24 @@ def respond_ok(
     }
 
 
+def respond_created(
+    response: Response | None = None,
+    message: str = 'Request processed successfully.',
+    status: int = 201,
+    error: str | None = None,
+    **kwargs,
+):
+    """Handless 201 code "Created" responses."""
+    if response:
+        response.status_code = http_statuses.HTTP_201_CREATED
+    return {
+        'status': status,
+        'message': message,
+        'error': error,
+        **kwargs,
+    }
+
+
 def respond_bad_request(
     response: Response | None = None,
     message: str = 'The system was unable to process your request.',
