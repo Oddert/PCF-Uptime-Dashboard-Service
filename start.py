@@ -24,6 +24,7 @@ from models.instance_model import InstanceModel
 from resources import auth_resources, instance_resources, root_resources
 
 from security.middleware import CustomCorsMW, get_ws_token, verify_extracted_token
+from starlette.responses import FileResponse 
 from security.roles import get_org_ids_for_user
 
 from utils.exceptions import NeedsAuthorisation, NeedsLogin
@@ -48,6 +49,10 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+@app.get('/voice')
+def get_voice():
+    return FileResponse('voice.html') 
 
 allowed_origins = [
     'http://localhost:8081',
@@ -87,8 +92,8 @@ async def websocket_endpoint(
             ws_manager.register_listener(instance.pcf_guid, websocket)
         try:
             while True:
-                data = await websocket.receive_text()
-                await ws_manager.send_personal_message(f'You wrote {data}', websocket)
+                await websocket.receive_text()
+                # await ws_manager.broadcast_multiple_updates(instances)
         except WebSocketDisconnect:
             ws_manager.unregister_listener(websocket)
     except NeedsLogin:
