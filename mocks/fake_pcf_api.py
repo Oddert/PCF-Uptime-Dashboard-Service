@@ -8,6 +8,14 @@ org_ids = {
     'MEMALPHA': '51b0c378-e4f0-4704-b724-d12c17b20614',
 }
 
+org_names = {
+    '1c845df9-a375-414c-8d69-4133363d9c03': 'PICOE',
+    '9259380c-aa2e-4fb4-9ef2-26408c25fd62': 'PICOEFIN',
+    'd8a5618a-95ba-4466-89e8-0c8a0fda8673': 'AIDEN',
+    '574c0903-ac6e-436a-a231-19aa4acaa52e': 'WHATIF',
+    '51b0c378-e4f0-4704-b724-d12c17b20614': 'MEMALPHA',
+}
+
 space_ids = {
     'PICOE-PRD': '2f35885d-0c9d-4423-83ad-fd05066f8576',
     'PICOE-PRD-STATIC': 'a6cfa3fa-4001-4422-bd2e-2a515349c4ca',
