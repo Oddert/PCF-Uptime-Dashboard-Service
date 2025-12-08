@@ -46,7 +46,7 @@ class WatchlistModel(ORMBase):
     def to_json(self):
         return {
             'description': self.description,
-            'instances': self.instances,
+            'instances': [instance.pcf_guid for instance in self.instances],
             'isDefault': bool(self.is_default),
             'title': self.title,
             'racf': self.racf,
@@ -66,7 +66,7 @@ class WatchlistModel(ORMBase):
     @classmethod
     def get_by_id(cls, watchlist_id: str, database: Session):
         """Queries a single watchlist by ID."""
-        return database.query(cls).filter_by(watchlist_id=watchlist_id).first()
+        return database.query(cls).filter_by(watchlist_id=bytes.fromhex(watchlist_id)).first()
 
     @classmethod
     def remove_default_flag(cls, racf: str, database: Session):
