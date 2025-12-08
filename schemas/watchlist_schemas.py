@@ -10,7 +10,7 @@ class PostWatchlist(BaseModel):
         min_length=0,
         max_length=2000,
     )
-    instanceIds: List[str] = Field(
+    instances: List[str] = Field(
         [],
         title='Instance IDs',
         description='Instances to be associated with this Watchlist.',
