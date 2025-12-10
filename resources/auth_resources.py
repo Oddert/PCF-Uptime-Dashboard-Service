@@ -7,13 +7,15 @@ from sqlalchemy.orm import Session
 
 from config.database import get_db
 
+from models.instance_model import InstanceModel
 from models.token_exclude_model import TokenExcludeModel
 from models.user_model import UserModel
+from models.watchlist_model import WatchlistModel
 
 from schemas.auth_schemas import PostLogin, PostSignup, PostTokenRefresh
 
 from security.hash import get_hashed_pwd, verify_hashed_pwd
-from security.roles import validate_role_list
+from security.roles import get_org_ids_for_user, validate_role_list
 from security.token import create_auth_tokens, validate_refresh_jwt
 
 from utils.exceptions import NeedsLogin, NotFound
@@ -66,6 +68,22 @@ def create_user(
         database.commit()
         database.flush()
 
+        default_watchlist = WatchlistModel(
+            description='',
+            racf=user.username,
+            title='Default watchlist',
+        )
+
+        database.add(default_watchlist)
+
+        org_ids = get_org_ids_for_user(user.areas)
+        instances = InstanceModel.find_by_org_id_list(org_ids, database)
+        
+        default_watchlist.instances = instances
+
+        database.commit()
+        database.flush()
+
         access_token, refresh_token = create_auth_tokens(created_user)
 
         return respond_ok(
@@ -73,6 +91,7 @@ def create_user(
             accessToken=access_token,
             refreshToken=refresh_token,
             user=created_user.to_json(),
+            defaultWatchlist=default_watchlist.to_json(),
         )
     except Exception as ex:
         return respond_server_error(response, error=str(ex))
