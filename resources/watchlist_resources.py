@@ -21,6 +21,7 @@ from security.middleware import protected_endpoint
 from security.roles import get_org_ids_for_user
 
 from utils.responses import (
+    respond_created,
     respond_not_found,
     respond_ok,
     respond_server_error,
@@ -113,6 +114,47 @@ async def create_single_watchlist(
         )
     except Exception as ex:
         return respond_server_error(response, error=str(ex))
+
+
+@router.put('/make-default/{watchlist_id}')
+@protected_endpoint()
+async def change_default_watchlist(
+    request: Request,
+    response: Response,
+    watchlist_id: str,
+    database: Session = Depends(get_db),
+    racfid: str = Depends(lambda: None),
+    roles: List[str] = Depends(lambda: None),
+):
+    """Get a single Watchlist by ID."""
+
+    try:
+        retrieved_watchlist = WatchlistModel.get_by_id(watchlist_id, database)
+
+        if not retrieved_watchlist:
+            return respond_not_found(
+                response, f'No Watchlist found for ID "{watchlist_id}"'
+            )
+
+        if retrieved_watchlist.racf != racfid:
+            return respond_unauthorised(
+                response, 'You are not the owner of this Watchlist'
+            )
+
+        WatchlistModel.remove_default_flag(racfid, database)
+        retrieved_watchlist.is_default = 1
+
+        database.commit()
+        database.flush()
+
+        return respond_created(
+            response,
+            watchlist=retrieved_watchlist.to_json(),
+        )
+    except Exception as ex:
+        return respond_server_error(response, error=str(ex))
+
+
 
 
 @router.get('/{watchlist_id}')
