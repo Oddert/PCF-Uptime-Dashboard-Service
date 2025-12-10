@@ -15,13 +15,13 @@ class PostWatchlist(BaseModel):
         title='Instance IDs',
         description='Instances to be associated with this Watchlist.',
     )
-    is_default: bool = Field(
+    isDefault: bool = Field(
         False,
         title='Is Default',
         description='Set to true if this watchlist is to be set as the default.',
     )
-    title: str | None = Field(
-        None,
+    title: str = Field(
+        ...,
         title='Title',
         description='Optional title for this watchlist.',
         min_length=0,
