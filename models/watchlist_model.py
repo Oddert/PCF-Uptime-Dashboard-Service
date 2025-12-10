@@ -15,7 +15,7 @@ class WatchlistModel(ORMBase):
 
     __tablename__ = 'PDB_WATCHLIST'
 
-    description: Mapped[str] = mapped_column(
+    description: Mapped[str | None] = mapped_column(
         NVARCHAR2(2000).with_variant(TEXT, 'sqlite', 'postgresql'),
         nullable=True,
         default='',
@@ -66,7 +66,11 @@ class WatchlistModel(ORMBase):
     @classmethod
     def get_by_id(cls, watchlist_id: str, database: Session):
         """Queries a single watchlist by ID."""
-        return database.query(cls).filter_by(watchlist_id=bytes.fromhex(watchlist_id)).first()
+        return (
+            database.query(cls)
+            .filter_by(watchlist_id=bytes.fromhex(watchlist_id))
+            .first()
+        )
 
     @classmethod
     def remove_default_flag(cls, racf: str, database: Session):
@@ -74,5 +78,5 @@ class WatchlistModel(ORMBase):
         return (
             database.query(cls)
             .filter_by(is_default=1, racf=racf)
-            .update(values={'is_default': False})
+            .update(values={'is_default': 0})
         )

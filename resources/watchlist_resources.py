@@ -100,9 +100,9 @@ async def create_single_watchlist(
             if instance:
                 created_watchlist.instances.append(instance)
 
-        if watchlist.is_default:
+        if watchlist.isDefault:
             WatchlistModel.remove_default_flag(racfid, database)
-            created_watchlist.is_default = True
+            created_watchlist.is_default = 1
 
         database.commit()
         database.flush()
@@ -186,13 +186,13 @@ async def update_watchlist(
             if instance:
                 next_instances.append(instance)
 
-        retrieved_watchlist.description = retrieved_watchlist.description
-        retrieved_watchlist.title = retrieved_watchlist.title
+        retrieved_watchlist.description = watchlist.description
         retrieved_watchlist.instances = next_instances
+        retrieved_watchlist.title = watchlist.title
 
-        if watchlist.is_default:
+        if watchlist.isDefault:
             WatchlistModel.remove_default_flag(racfid, database)
-            retrieved_watchlist.is_default = True
+            retrieved_watchlist.is_default = 1
 
         database.commit()
         database.flush()
