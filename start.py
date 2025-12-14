@@ -94,7 +94,7 @@ async def websocket_endpoint(
         await websocket.accept()
         decoded_verified_token = verify_extracted_token(token)
         org_ids = get_org_ids_for_user(decoded_verified_token['roles'])
-        instances = InstanceModel.find_by_org_id_list(org_ids, database)
+        instances = InstanceModel.find_by_org_id_list(org_ids, '', database)
 
         for instance in instances:
             ws_manager.register_listener(instance.pcf_guid, websocket)

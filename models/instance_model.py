@@ -2,13 +2,16 @@ from datetime import datetime
 from time import mktime
 from typing import List
 
+from sqlalchemy import and_
 from sqlalchemy.dialects.postgresql import BYTEA, DOUBLE_PRECISION
 from sqlalchemy.dialects.oracle import DATE, NUMBER, NVARCHAR2, RAW
-from sqlalchemy.orm import Mapped, mapped_column, Session
+from sqlalchemy.orm import Mapped, mapped_column, relationship, Session
 from sqlalchemy.types import BLOB, DOUBLE, INTEGER, FLOAT, TEXT
 
 from config.database import ORMBase
 from config.variables import timezone
+
+from models.instance_attrs_model import InstanceAttrModel
 
 from utils.orm_utils import default_uuid
 
@@ -41,7 +44,7 @@ class InstanceModel(ORMBase):
         NUMBER().with_variant(FLOAT, 'sqlite', 'postgresql'), nullable=True
     )
     pcf_guid: Mapped[str] = mapped_column(
-        NVARCHAR2(255).with_variant(TEXT, 'sqlite', 'postgresql'), nullable=False
+        NVARCHAR2(255).with_variant(TEXT, 'sqlite', 'postgresql'), nullable=False, unique=True,
     )
     pcf_space_id: Mapped[str] = mapped_column(
         NVARCHAR2(20).with_variant(TEXT, 'sqlite', 'postgresql'), nullable=False
@@ -75,6 +78,12 @@ class InstanceModel(ORMBase):
         DATE, nullable=False, default=lambda: datetime.now(timezone)
     )
 
+    instance_attr = relationship(
+        InstanceAttrModel,
+        primaryjoin='InstanceModel.pcf_guid == InstanceAttrModel.pcf_guid',
+        lazy='selectin',
+    )
+
     def to_json(self):
         return {
             'contactInfo': self.contact_info,
@@ -96,40 +105,96 @@ class InstanceModel(ORMBase):
             'updatedAt': mktime(self.updated_at.timetuple())
             if self.updated_at
             else None,
+            'userOverrides': self.instance_attr[0].to_json()
+            if self.instance_attr and len(self.instance_attr)
+            else None,
         }
 
     @classmethod
-    def find_by_app_id(cls, instance_id: str, database: Session):
+    def find_by_app_id(cls, instance_id: str, racf: str, database: Session):
         """Queries a single Instance by the application ID."""
         return (
             database.query(cls)
             .filter_by(instance_id=bytes.fromhex(instance_id))
+            .outerjoin(
+                InstanceAttrModel,
+                and_(
+                    InstanceAttrModel.pcf_guid == cls.pcf_guid,
+                    InstanceAttrModel.racf == racf,
+                ),
+            )
+            # .options(contains_eager(cls.instance_id))
             .first()
         )
 
     @classmethod
-    def find_by_pcf_guid(cls, pcf_guid: str, database: Session):
+    def find_by_pcf_guid(cls, pcf_guid: str, racf: str, database: Session):
         """Queries a single Instance by the PCF ID."""
-        return database.query(cls).filter_by(pcf_guid=pcf_guid).first()
+        return (
+            database.query(cls)
+            .filter_by(pcf_guid=pcf_guid)
+            .outerjoin(
+                InstanceAttrModel,
+                and_(
+                    InstanceAttrModel.pcf_guid == cls.pcf_guid,
+                    InstanceAttrModel.racf == racf,
+                ),
+            )
+            # .options(contains_eager(cls.instance_id))
+            .first()
+        )
 
     @classmethod
     def find_by_pcf_guid_and_org(
-        cls, pcf_guid: str, org_ids: List[str], database: Session
+        cls, pcf_guid: str, org_ids: List[str], racf: str, database: Session
     ):
         """Queries an instance by PCF ID but only if the organisation ID is in the permitted list."""
         return (
             database.query(cls)
             .filter_by(pcf_guid=pcf_guid)
             .filter(cls.pcf_org_id.in_(org_ids))
+            .outerjoin(
+                InstanceAttrModel,
+                and_(
+                    InstanceAttrModel.pcf_guid == cls.pcf_guid,
+                    InstanceAttrModel.racf == racf,
+                ),
+            )
+            # .options(contains_eager(cls.instance_id))
             .first()
         )
 
     @classmethod
-    def find_by_org_id_list(cls, org_ids: List[str], database: Session):
+    def find_by_org_id_list(cls, org_ids: List[str], racf: str, database: Session):
         """Queries all instances belonging to a given organisation ID."""
-        return database.query(cls).filter(cls.pcf_org_id.in_(org_ids)).all()
+        return (
+            database.query(cls)
+            .filter(cls.pcf_org_id.in_(org_ids))
+            .outerjoin(
+                InstanceAttrModel,
+                and_(
+                    InstanceAttrModel.pcf_guid == cls.pcf_guid,
+                    InstanceAttrModel.racf == racf,
+                ),
+            )
+            # .options(contains_eager(cls.instance_id))
+            # .subquery(InstanceAttrModel.)
+            # .join(InstanceAttrModel, InstanceAttrModel.racf == racf)
+            .all()
+        )
 
     @classmethod
-    def find_all(cls, database: Session):
+    def find_all(cls, racf: str, database: Session):
         """Queries all instances held by the system."""
-        return database.query(cls).all()
+        return (
+            database.query(cls)
+            .outerjoin(
+                InstanceAttrModel,
+                and_(
+                    InstanceAttrModel.pcf_guid == cls.pcf_guid,
+                    InstanceAttrModel.racf == racf,
+                ),
+            )
+            # .options(contains_eager(cls.instance_id))
+            .all()
+        )

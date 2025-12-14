@@ -18,8 +18,11 @@ from config.variables import timezone
 from constants.auth_constants import auth_areas
 
 from models.instance_model import InstanceModel
+from models.instance_attrs_model import InstanceAttrModel
 
 from mocks.fake_pcf_api import fake_pcf_call, org_names, spaces_by_id
+
+from schemas.instance_schemas import PostInstanceAttr
 
 from security.middleware import protected_endpoint
 from security.roles import get_org_ids_for_user
@@ -53,7 +56,7 @@ async def get_all_instances(
             sync_manager.log_update()
 
         org_ids = get_org_ids_for_user(roles)
-        instances = InstanceModel.find_by_org_id_list(org_ids, database)
+        instances = InstanceModel.find_by_org_id_list(org_ids, racfid, database)
         await ws_manager.broadcast_multiple_updates(instances)
         return respond_ok(
             response, instances=[instance.to_json() for instance in instances]
@@ -93,7 +96,7 @@ async def get_single_instance_by_id(
 
     try:
         org_ids = get_org_ids_for_user(roles)
-        instance = InstanceModel.find_by_app_id(instance_id, database)
+        instance = InstanceModel.find_by_app_id(instance_id, racfid, database)
 
         if not instance:
             return respond_not_found(
@@ -131,7 +134,7 @@ async def get_single_instance_by_pcf_guid(
 
     try:
         org_ids = get_org_ids_for_user(roles)
-        instance = InstanceModel.find_by_pcf_guid(instance_id, database)
+        instance = InstanceModel.find_by_pcf_guid(instance_id, racfid, database)
 
         if not instance:
             return respond_not_found(
@@ -150,6 +153,50 @@ async def get_single_instance_by_pcf_guid(
             response,
             message=f'Instance PCF GUID of "{instance_id}" is not valid.',
             error=str(ex),
+        )
+    except Exception as ex:
+        return respond_server_error(response, error=str(ex))
+
+
+@router.put('/user-overrides/{pcf_guid}')
+@protected_endpoint(for_areas=[auth_areas.ADMIN])
+async def update_user_overrides(
+    request: Request,
+    response: Response,
+    pcf_guid: str,
+    instance_attributes: PostInstanceAttr,
+    database: Session = Depends(get_db),
+    racfid: str = Depends(lambda: None),
+    roles: List[str] = Depends(lambda: None),
+):
+    """Endpoint to manually trigger PCF Instance syncs."""
+
+    try:
+        instance = InstanceModel.find_by_pcf_guid(pcf_guid, racfid, database)
+
+        if not instance:
+            return respond_not_found(response, message=f'No Instance found for GUID "{pcf_guid}"')
+
+        instance_attr = InstanceAttrModel.find_by_pcf_guid(pcf_guid, racfid, database)
+
+        if instance_attr:
+            instance_attr.description = instance_attributes.description
+            instance_attr.readable_name = instance_attributes.readableName
+        else:
+            instance_attr = InstanceAttrModel(
+                description=instance_attributes.description,
+                pcf_guid=pcf_guid,
+                racf=racfid,
+                readable_name=instance_attributes.readableName,
+            )
+            database.add(instance_attr)
+        
+        database.commit()
+        database.flush()
+
+        return respond_ok(
+            response,
+            instanceAttributes=instance_attr.to_json(),
         )
     except Exception as ex:
         return respond_server_error(response, error=str(ex))
@@ -227,7 +274,7 @@ async def syc_and_create_instances(
     for pcf_org in fake_pcf_call:
         for pcf_instance in pcf_org['instances']:
             queried_app_instance = InstanceModel.find_by_pcf_guid(
-                pcf_instance['guid'], database
+                pcf_instance['guid'], '', database
             )
             if queried_app_instance:
                 queried_app_instance.created_at = pcf_instance['created_at']

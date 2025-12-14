@@ -77,8 +77,8 @@ def create_user(
         database.add(default_watchlist)
 
         org_ids = get_org_ids_for_user(user.areas)
-        instances = InstanceModel.find_by_org_id_list(org_ids, database)
-        
+        instances = InstanceModel.find_by_org_id_list(org_ids, user.username, database)
+
         default_watchlist.instances = instances
 
         database.commit()

@@ -96,7 +96,7 @@ async def create_single_watchlist(
 
         for instance_id in watchlist.instances:
             instance = InstanceModel.find_by_pcf_guid_and_org(
-                instance_id, org_ids, database
+                instance_id, org_ids, racfid, database
             )
             if instance:
                 created_watchlist.instances.append(instance)
@@ -155,8 +155,6 @@ async def change_default_watchlist(
         return respond_server_error(response, error=str(ex))
 
 
-
-
 @router.get('/{watchlist_id}')
 @protected_endpoint()
 async def get_watchlist_by_id(
@@ -181,7 +179,6 @@ async def get_watchlist_by_id(
             return respond_unauthorised(
                 response, 'You are not the owner of this Watchlist'
             )
-
 
         return respond_ok(
             response,
@@ -223,7 +220,7 @@ async def update_watchlist(
 
         for instance_id in watchlist.instances:
             instance = InstanceModel.find_by_pcf_guid_and_org(
-                instance_id, org_ids, database
+                instance_id, org_ids, racfid, database
             )
             if instance:
                 next_instances.append(instance)
