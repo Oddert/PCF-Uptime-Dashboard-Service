@@ -178,8 +178,6 @@ class InstanceModel(ORMBase):
                 ),
             )
             # .options(contains_eager(cls.instance_id))
-            # .subquery(InstanceAttrModel.)
-            # .join(InstanceAttrModel, InstanceAttrModel.racf == racf)
             .all()
         )
 

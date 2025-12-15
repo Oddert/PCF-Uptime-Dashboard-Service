@@ -141,7 +141,7 @@ fake_pcf_call: list[dict[str, Any]] = [
                 'guid': app_ids['staff-viewer'],
                 'name': 'staff-viewer',
                 'space_id': space_ids['PICOE-PRD-STATIC'],
-                'desired_state': 'RUNNING',
+                'desired_state': 'STOPPED',
                 'total_desired_instances': 0,
                 'created_at': '2025-03-17T21:41:30Z',
                 'updated_at': '2025-06-08T16:41:26Z',

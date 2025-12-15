@@ -15,7 +15,7 @@ class InstanceAttrModel(ORMBase):
     __tablename__ = 'PDB_INSTANCE_ATTR'
 
     description: Mapped[str|None] = mapped_column(
-        NVARCHAR2(255).with_variant(TEXT, 'sqlite', 'postgresql'), nullable=False
+        NVARCHAR2(255).with_variant(TEXT, 'sqlite', 'postgresql'), nullable=True
     )
     instance_attrs_id: Mapped[bytes] = mapped_column(
         RAW(16).with_variant(BLOB, 'sqlite').with_variant(BYTEA, 'postgresql'),
@@ -41,7 +41,6 @@ class InstanceAttrModel(ORMBase):
             'description': self.description,
             'instanceAttrId': self.instance_attrs_id.hex(),
             'pcfGuid': self.pcf_guid,
-            'racf': self.racf,
             'readableName': self.readable_name,
         }
 

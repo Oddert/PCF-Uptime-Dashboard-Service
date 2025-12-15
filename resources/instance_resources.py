@@ -1,6 +1,7 @@
 """Handles all responses on the base endpoint "/instance"."""
 
 from datetime import datetime
+from math import ceil
 from typing import List
 
 from fastapi import (
@@ -21,6 +22,7 @@ from models.instance_model import InstanceModel
 from models.instance_attrs_model import InstanceAttrModel
 
 from mocks.fake_pcf_api import fake_pcf_call, org_names, spaces_by_id
+from mocks.fake_pcf_tasks_call import tasks_by_pcf_name
 
 from schemas.instance_schemas import PostInstanceAttr
 
@@ -78,6 +80,67 @@ async def get_space_mapping(
 
     try:
         return respond_ok(response, orgNames=org_names)
+    except Exception as ex:
+        return respond_server_error(response, error=str(ex))
+
+
+@router.get('/tasks/pcf-id/{instance_id}')
+@protected_endpoint()
+async def get_tasks_by_pcf_guid(
+    request: Request,
+    response: Response,
+    instance_id: str,
+    database: Session = Depends(get_db),
+    racfid: str = Depends(lambda: None),
+    roles: List[str] = Depends(lambda: None),
+):
+    """Retrieves a specific instance by ID. Note that this is the PCF GUD the app's internal ID."""
+
+    try:
+        org_ids = get_org_ids_for_user(roles)
+        instance = InstanceModel.find_by_pcf_guid(instance_id, racfid, database)
+
+        if not instance:
+            return respond_not_found(
+                response, error=f'No instance found for PCF ID "{instance_id}".'
+            )
+
+        if instance.pcf_org_id not in org_ids:
+            return respond_unauthorised(
+                response,
+                f'You do not have the required roles to access the instance with ID "{instance_id}".',
+            )
+
+        tasks = []
+        if instance.pcf_app_name in tasks_by_pcf_name:
+            tasks = tasks_by_pcf_name[instance.pcf_app_name]
+
+        return respond_ok(
+            response,
+            tasks={
+                'pagination': {
+                    'total_results': len(tasks),
+                    'total_pages': ceil(len(tasks)),
+                    'first': {
+                        'href': 'https://api.example.org/v3/apps/ccc25a0f-c8f4-4b39-9f1b-de9f328d0ee5/tasks?page=1&per_page=2'
+                    },
+                    'last': {
+                        'href': 'https://api.example.org/v3/apps/ccc25a0f-c8f4-4b39-9f1b-de9f328d0ee5/tasks?page=2&per_page=2'
+                    },
+                    'next': {
+                        'href': 'https://api.example.org/v3/apps/ccc25a0f-c8f4-4b39-9f1b-de9f328d0ee5/tasks?page=2&per_page=2'
+                    },
+                    'previous': None,
+                },
+                'resources': tasks,
+            },
+        )
+    except ValueError as ex:
+        return respond_not_found(
+            response,
+            message=f'Instance PCF GUID of "{instance_id}" is not valid.',
+            error=str(ex),
+        )
     except Exception as ex:
         return respond_server_error(response, error=str(ex))
 
@@ -175,7 +238,9 @@ async def update_user_overrides(
         instance = InstanceModel.find_by_pcf_guid(pcf_guid, racfid, database)
 
         if not instance:
-            return respond_not_found(response, message=f'No Instance found for GUID "{pcf_guid}"')
+            return respond_not_found(
+                response, message=f'No Instance found for GUID "{pcf_guid}"'
+            )
 
         instance_attr = InstanceAttrModel.find_by_pcf_guid(pcf_guid, racfid, database)
 
@@ -190,7 +255,7 @@ async def update_user_overrides(
                 readable_name=instance_attributes.readableName,
             )
             database.add(instance_attr)
-        
+
         database.commit()
         database.flush()
 
