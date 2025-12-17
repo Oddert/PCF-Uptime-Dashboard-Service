@@ -14,7 +14,7 @@ class InstanceAttrModel(ORMBase):
 
     __tablename__ = 'PDB_INSTANCE_ATTR'
 
-    description: Mapped[str|None] = mapped_column(
+    description: Mapped[str | None] = mapped_column(
         NVARCHAR2(255).with_variant(TEXT, 'sqlite', 'postgresql'), nullable=True
     )
     instance_attrs_id: Mapped[bytes] = mapped_column(
@@ -32,7 +32,7 @@ class InstanceAttrModel(ORMBase):
     racf: Mapped[str] = mapped_column(
         NVARCHAR2(20).with_variant(TEXT, 'sqlite', 'postgresql'), nullable=False
     )
-    readable_name: Mapped[str|None] = mapped_column(
+    readable_name: Mapped[str | None] = mapped_column(
         NVARCHAR2(255).with_variant(TEXT, 'sqlite', 'postgresql'), nullable=True
     )
 
@@ -46,5 +46,5 @@ class InstanceAttrModel(ORMBase):
 
     @classmethod
     def find_by_pcf_guid(cls, pcf_guid: str, racfid: str, database: Session):
-        '''Queries an record by PCF ID for a specific user.'''
+        """Queries an record by PCF ID for a specific user."""
         return database.query(cls).filter_by(pcf_guid=pcf_guid, racf=racfid).first()

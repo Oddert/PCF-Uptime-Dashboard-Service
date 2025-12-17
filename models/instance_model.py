@@ -44,7 +44,9 @@ class InstanceModel(ORMBase):
         NUMBER().with_variant(FLOAT, 'sqlite', 'postgresql'), nullable=True
     )
     pcf_guid: Mapped[str] = mapped_column(
-        NVARCHAR2(255).with_variant(TEXT, 'sqlite', 'postgresql'), nullable=False, unique=True,
+        NVARCHAR2(255).with_variant(TEXT, 'sqlite', 'postgresql'),
+        nullable=False,
+        unique=True,
     )
     pcf_space_id: Mapped[str] = mapped_column(
         NVARCHAR2(20).with_variant(TEXT, 'sqlite', 'postgresql'), nullable=False
