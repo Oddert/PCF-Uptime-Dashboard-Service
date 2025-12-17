@@ -66,7 +66,6 @@ example = {
 tasks_by_pcf_name = {
     'actions-reminders': [],
     'staff-viewer': [
-        
         {
             'guid': '63b4cd89-fd8b-4bf1-a311-7174fcc907d6',
             'sequence_id': 5,
