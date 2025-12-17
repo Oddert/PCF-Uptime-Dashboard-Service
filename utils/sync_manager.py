@@ -46,8 +46,8 @@ class SyncManager:
         if self.last_updated + timedelta(seconds=self.update_wait) > datetime.now(
             timezone
         ):
-            return True
-        return False
+            return False
+        return True
 
 
-sync_manager = SyncManager(180)
+sync_manager = SyncManager(10)
