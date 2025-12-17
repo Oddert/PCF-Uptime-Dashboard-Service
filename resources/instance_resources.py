@@ -21,8 +21,9 @@ from constants.auth_constants import auth_areas
 from models.instance_model import InstanceModel
 from models.instance_attrs_model import InstanceAttrModel
 
-from mocks.fake_pcf_api import fake_pcf_call, org_names, spaces_by_id
-from mocks.fake_pcf_tasks_call import tasks_by_pcf_name
+from mocks.fake_instance_call import fake_pcf_call
+from mocks.fake_pcf_api import org_names, spaces_by_id
+from mocks.fake_tasks_call import tasks_by_pcf_name
 
 from schemas.instance_schemas import PostInstanceAttr
 
@@ -330,49 +331,81 @@ async def debug_get_pcf_call(
         return respond_server_error(response, error=str(ex))
 
 
+@router.put('/demo/{pcf_guid}/{action}')
+@protected_endpoint()
+async def demo_endpoint(
+    request: Request,
+    response: Response,
+    pcf_guid: str,
+    action: str,
+    database: Session = Depends(get_db),
+    racfid: str = Depends(lambda: None),
+    roles: List[str] = Depends(lambda: None),
+):
+    """Retrieves a list of all instances stored within the system."""
+
+    try:
+        for org in fake_pcf_call:
+            for instance in org['instances']:
+                if instance['guid'] == pcf_guid:
+                    instance['desired_state'] = action
+
+        return respond_ok(
+            response,
+        )
+    except Exception as ex:
+        return respond_server_error(response, error=str(ex))
+
+
 async def syc_and_create_instances(
     database: Session = Depends(get_db),
 ):
     """Checks all PCF spaces to create or delete application Instances, based on the current makeup of PCF."""
 
-    # try:
-    for pcf_org in fake_pcf_call:
-        for pcf_instance in pcf_org['instances']:
-            queried_app_instance = InstanceModel.find_by_pcf_guid(
-                pcf_instance['guid'], '', database
-            )
-            if queried_app_instance:
-                queried_app_instance.created_at = pcf_instance['created_at']
-                queried_app_instance.pcf_app_name = pcf_instance['name']
-                queried_app_instance.pcf_cpu = 0
-                queried_app_instance.pcf_org_id = pcf_org['org_id']
-                queried_app_instance.pcf_space_id = pcf_instance['space_id']
-                queried_app_instance.pcf_instances_total = 1
-                queried_app_instance.pcf_ram = 1
-                queried_app_instance.readable_name = pcf_instance['name']
-                queried_app_instance.status = pcf_instance['desired_state']
-                queried_app_instance.updated_at = pcf_instance['updated_at']
-            else:
-                queried_app_instance = InstanceModel(
-                    created_at=pcf_instance['created_at'],
-                    pcf_app_name=pcf_instance['name'],
-                    pcf_cpu=0,
-                    pcf_guid=pcf_instance['guid'],
-                    pcf_org_id=pcf_org['org_id'],
-                    pcf_space_id=pcf_instance['space_id'],
-                    pcf_instances_total=1,
-                    pcf_ram=1,
-                    readable_name=pcf_instance['name'],
-                    status=pcf_instance['desired_state'],
-                    updated_at=pcf_instance['updated_at'],
+    try:
+        for pcf_org in fake_pcf_call:
+            to_broadcast: List[InstanceModel] = []
+            for pcf_instance in pcf_org['instances']:
+                queried_app_instance = InstanceModel.find_by_pcf_guid(
+                    pcf_instance['guid'], '', database
                 )
-                database.add(queried_app_instance)
-            await ws_manager.broadcast_update(queried_app_instance)
+                if queried_app_instance:
+                    queried_app_instance.created_at = datetime.fromisoformat(
+                        pcf_instance['created_at']
+                    )
+                    queried_app_instance.pcf_app_name = pcf_instance['name']
+                    queried_app_instance.pcf_cpu = 0
+                    queried_app_instance.pcf_org_id = pcf_org['org_id']
+                    queried_app_instance.pcf_space_id = pcf_instance['space_id']
+                    queried_app_instance.pcf_instances_total = 1
+                    queried_app_instance.pcf_ram = 1
+                    queried_app_instance.readable_name = pcf_instance['name']
+                    queried_app_instance.status = pcf_instance['desired_state']
+                    queried_app_instance.updated_at = datetime.fromisoformat(
+                        pcf_instance['updated_at']
+                    )
+                else:
+                    queried_app_instance = InstanceModel(
+                        created_at=datetime.fromisoformat(pcf_instance['created_at']),
+                        pcf_app_name=pcf_instance['name'],
+                        pcf_cpu=0,
+                        pcf_guid=pcf_instance['guid'],
+                        pcf_org_id=pcf_org['org_id'],
+                        pcf_space_id=pcf_instance['space_id'],
+                        pcf_instances_total=1,
+                        pcf_ram=1,
+                        readable_name=pcf_instance['name'],
+                        status=pcf_instance['desired_state'],
+                        updated_at=datetime.fromisoformat(pcf_instance['updated_at']),
+                    )
+                    database.add(queried_app_instance)
+                to_broadcast.append(queried_app_instance)
+            await ws_manager.broadcast_multiple_updates(to_broadcast)
 
-    database.commit()
-    return {'message': 'Sync completed successfully'}
-    # except Exception as ex:
-    #     raise ex
+        database.commit()
+        return {'message': 'Sync completed successfully'}
+    except Exception as ex:
+        raise ex
 
 
 async def schedule_instance_sync():
