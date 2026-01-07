@@ -44,6 +44,7 @@ class WatchlistModel(ORMBase):
     instances = relationship('InstanceModel', secondary=watchlist_instance_join)
 
     def to_json(self):
+        """Returns a JSON-serialisable representation of the instance."""
         return {
             'description': self.description,
             'instances': [instance.pcf_guid for instance in self.instances],
