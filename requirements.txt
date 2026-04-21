@@ -1,6 +1,7 @@
 alembic
 apscheduler
 bcrypt
+cryptography
 fastapi
 loguru
 pre-commit
