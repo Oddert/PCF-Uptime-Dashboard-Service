@@ -13,8 +13,6 @@ from sqlalchemy.orm import Session
 
 from config.database import get_db
 
-from security.middleware import protected_endpoint
-
 from utils.responses import (
     respond_ok,
     respond_server_error,
@@ -24,7 +22,6 @@ router = APIRouter()
 
 
 @router.get('/api/health')
-@protected_endpoint()
 async def get_all_instances(
     request: Request,
     response: Response,
