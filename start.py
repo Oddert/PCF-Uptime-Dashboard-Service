@@ -23,6 +23,7 @@ from models.instance_model import InstanceModel
 
 from resources import (
     auth_resources,
+    healthcheck_resources,
     instance_resources,
     root_resources,
     watchlist_resources,
@@ -76,6 +77,8 @@ routes = [
     (root_resources.router, 'Root'),
     (watchlist_resources.router, 'Watchlist'),
 ]
+
+app.include_router(healthcheck_resources.router, tags=['Health Check'])
 
 for route, tags in routes:
     logger.info(f'Initialising route: {tags}')
