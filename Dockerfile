@@ -24,10 +24,10 @@ RUN python -m pip install --upgrade pip
 RUN python -m pip install -r requirements.txt
 
 # Make port 80 available to the world outside this container
-EXPOSE 8000
+EXPOSE 80
 
 # Define environment variable
 ENV NAME HelloWorld
 
 # Run app.py when the container launches
-CMD ["uvicorn", "start:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "start:app", "--host", "0.0.0.0", "--port", "80"]

@@ -122,6 +122,6 @@ async def websocket_endpoint(
 if __name__ == '__main__':
     run(
         'start:app',
-        port=8081,
+        port=80,
         reload=True,
     )
