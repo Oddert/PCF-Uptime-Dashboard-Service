@@ -32,7 +32,7 @@ async def get_all_instances(
     """Retrieves a list of all instances stored within the system."""
 
     try:
-        database.execute(text('select 1 from dual'))
+        database.execute(text('select 1'))
         return respond_ok(
             response,
         )
