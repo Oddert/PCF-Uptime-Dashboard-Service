@@ -10,6 +10,7 @@ from fastapi import (
 )
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+from loguru import logger
 
 from config.database import get_db
 
@@ -37,4 +38,6 @@ async def get_all_instances(
             response,
         )
     except Exception as ex:
+        logger.error('Health check failed for reason: ')
+        logger.error(str(ex))
         return respond_server_error(response, error=str(ex))
