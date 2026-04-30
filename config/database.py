@@ -5,7 +5,7 @@ from config.variables import PG_USERNAME, PG_PASSWORD, PG_HOST, PG_PORT, PG_DATA
 
 DATABASE_URL = f'postgresql+psycopg2://{PG_USERNAME}:{PG_PASSWORD}@{PG_HOST}:{PG_PORT}/{PG_DATABASE}'
 
-engine = create_engine(DATABASE_URL, connect_args={'ssl_ca': './global-bundle.pem'})
+engine = create_engine(DATABASE_URL, connect_args={'sslrootcert': './global-bundle.pem'})
 
 ORMBase = declarative_base()
 
