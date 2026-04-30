@@ -9,6 +9,8 @@ engine = create_engine(DATABASE_URL, connect_args={'ssl_ca': './global-bundle.pe
 
 ORMBase = declarative_base()
 
+ORMBase.metadata.create_all(bind=engine)
+
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
 
