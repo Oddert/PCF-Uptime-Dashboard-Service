@@ -58,3 +58,6 @@ PG_PASSWORD = get_setting('PG_PASSWORD', None, True)
 PG_HOST = get_setting('PG_HOST', None, True)
 PG_PORT = get_setting('PG_PORT', None, True)
 PG_DATABASE = get_setting('PG_DATABASE', None, True)
+test = get_setting('test-secret-manager', 'did not read :(', False)
+
+logger.info(f'Loaded test variable: {test}')
