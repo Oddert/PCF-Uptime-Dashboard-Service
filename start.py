@@ -66,6 +66,9 @@ allowed_origins = [
     'http://localhost:8081',
     'http://localhost:5173',
     'ws://localhost:5173',
+    'http://msc-dashboard-web-lb-1-1166048007.eu-north-1.elb.amazonaws.com',
+    'https://msc-dashboard-web-lb-1-1166048007.eu-north-1.elb.amazonaws.com',
+    'ws://msc-dashboard-web-lb-1-1166048007.eu-north-1.elb.amazonaws.com',
 ]
 
 
