@@ -34,6 +34,7 @@ jobs:
           echo "version=$(echo ${GITHUB_SHA} | cut -c1-7)" >> $GITHUB_OUTPUT
           echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_OUTPUT
           echo "date=$(date -u +'%Y%m%d%H%M%S')" >> $GITHUB_OUTPUT
+          echo "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
       - name: Set up Docker Buildx
